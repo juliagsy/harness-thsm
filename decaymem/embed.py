@@ -6,7 +6,7 @@ import math
 import re
 import zlib
 
-_TOKEN = re.compile(r"[a-z0-9_./*-]+")
+_TOKEN = re.compile(r"[a-z0-9]+")
 
 
 class HashBowEmbedder:

@@ -69,14 +69,14 @@ class DeonticPayload(BaseModel):
     principal: str
     conditions: dict[str, Any] = Field(default_factory=dict)
     expiry: Tick | None = None  # principal-set; exclusive
-    target: str | None = None  # REVOKE: id of the GRANT being revoked
+    target: str | None = None  # REVOKE: id of the GRANT being revoked (or use `scope`)
     uses_remaining: int | None = None  # mirrors scope.max_uses; decremented by authorize()
 
     @model_validator(mode="after")
     def _check_shape(self) -> DeonticPayload:
         if self.kind == DeonKind.REVOKE:
-            if not self.target:
-                raise ValueError("REVOKE requires target grant id")
+            if not self.target and self.scope is None:
+                raise ValueError("REVOKE requires a target grant id or a scope")
         elif self.scope is None:
             raise ValueError(f"{self.kind} requires a scope")
         if self.uses_remaining is None and self.scope is not None:

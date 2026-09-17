@@ -71,17 +71,24 @@ def effective_authority(store_or_entries: Store | Iterable[Entry], t: Tick) -> A
         else list(store_or_entries)
     )
     deon = _deon_entries(entries)
-    revoked: set[str] = {
-        e.deon.target
-        for e in deon
-        if e.deon.kind == DeonKind.REVOKE and _in_force(e, t) and e.deon.target is not None
-    }
+    revokes = [e for e in deon if e.deon.kind == DeonKind.REVOKE and _in_force(e, t)]
+    revoked_ids = {e.deon.target for e in revokes if e.deon.target is not None}
+    revoke_scopes = [e.deon.scope for e in revokes if e.deon.scope is not None]
+
+    def _revoked(g: Entry) -> bool:
+        if g.id in revoked_ids:
+            return True
+        # a REVOKE by scope removes every grant whose scope it subsumes (or equals)
+        return g.deon.scope is not None and any(
+            rs.subsumes(g.deon.scope) or g.deon.scope == rs for rs in revoke_scopes
+        )
+
     grants = [
         e
         for e in deon
         if e.deon.kind == DeonKind.GRANT
         and _in_force(e, t)
-        and e.id not in revoked
+        and not _revoked(e)
         and (e.deon.uses_remaining is None or e.deon.uses_remaining > 0)
     ]
     denies = [e for e in deon if e.deon.kind == DeonKind.DENY and _in_force(e, t)]

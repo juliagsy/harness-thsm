@@ -4,9 +4,9 @@
 
 | Phase | Weeks | Deliverable | Exit criterion |
 |---|---|---|---|
-| 0 Foundations | 1 | Repo skeleton, `core/` schemas, label lattice, effective-authority function, invariant checker, unit tests | Invariants I1–I6 pass on hand-written stores and fail on hand-written violations |
-| 1 Pipeline | 2–3 | Coding-harness environment, scenario generator v0, deterministic grader, `flat_vector` + `flat_ebbinghaus`, `anthropic` + `cached` providers, dry-run provider | One end-to-end run on a 200-event scenario produces both scorecards at zero and nonzero cost |
-| 2 THSM | 4–5 | `thsm` backend, typed writer, deterministic authz gate, pinned compaction, `actr` and `memory_worth` decay, `openai_compat` provider | H1 and H3 configs run on 5 seeds with a small model; frontier plot renders |
+| 0 Foundations (done 2026-09-17) | 1 | Repo skeleton, `core/` schemas, label lattice, effective-authority function, invariant checker, unit tests | Invariants I1–I6 pass on hand-written stores and fail on hand-written violations |
+| 1 Pipeline (done 2026-09-17; live run pending credentials) | 2–3 | Coding-harness environment, scenario generator v0, deterministic grader, `flat_vector` + `flat_ebbinghaus`, `anthropic` + `cached` providers, dry-run provider | One end-to-end run on a 200-event scenario produces both scorecards at zero and nonzero cost |
+| 2 THSM (done 2026-09-17; sweeps run zero-cost with the scripted agent only) | 4–5 | `thsm` backend, typed writer, deterministic authz gate, pinned compaction, `actr` and `memory_worth` decay, `openai_compat` provider | H1 and H3 configs run on 5 seeds with a small model; frontier plot renders |
 | 3 Matrix + ablations | 6 | Full matrix, 2x2 ablation for H5, capability-stripped skills for H6, `PCD(d)` curves for H4, frontier-model confirmation runs | Pre-registered hypotheses each have a result table |
 | 4 External + case study | 7–8 | `mem0`/`letta` adapters, procurement domain, ConstraintRot and Laundering replication subsets, `claude_code_files` case study, scenario dataset release | Paper draft with figures |
 

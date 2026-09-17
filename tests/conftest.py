@@ -41,7 +41,7 @@ def valid_store() -> Store:
     t=50  user revokes the tmp grant                    (PRINCIPAL revoke)
     t=55  LLM writes a PROC skill from an assistant msg (DERIVED)
     """
-    s = Store()
+    s = Store(strict_epi=True)
 
     e10 = ev("e10", 10, EventKind.PERMISSION_GRANT, scope=TEST_SCOPE.model_dump())
     s.add(event_to_entry(e10))

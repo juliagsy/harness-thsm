@@ -1,7 +1,9 @@
 """In-memory entry store with snapshots and an operator log.
 
-Phase 0 keeps the store minimal: enough for the invariant checker to compare states
-before and after an operator. Backends in later phases wrap or subclass this.
+Snapshots are deliberately lean: they hold full dumps only for EPI and DEON entries (the
+types the transition invariants I1, I3 and I6 reason about) plus the id set. EPI dumps are
+cached because EPI entries are immutable by invariant; pass `strict_epi=True` to re-dump
+them on every snapshot so that in-place tampering is caught (used by the test suite).
 """
 
 from __future__ import annotations
@@ -15,15 +17,18 @@ from decaymem.core.entries import Entry, Tick
 from decaymem.core.events import Event
 from decaymem.core.types import EntryType, Operator
 
+SNAPSHOT_TYPES = (EntryType.EPI, EntryType.DEON)
+
 
 class Snapshot(BaseModel):
-    """Frozen copy of a store: entry id -> model dump."""
+    """Frozen view of a store: EPI and DEON dumps by id, plus all entry ids."""
 
     t: Tick
     entries: dict[str, dict[str, Any]]
+    all_ids: set[str] = Field(default_factory=set)
 
     def ids(self) -> set[str]:
-        return set(self.entries)
+        return set(self.all_ids or self.entries)
 
     def of_type(self, type_: EntryType) -> dict[str, dict[str, Any]]:
         return {k: v for k, v in self.entries.items() if v["type"] == type_.value}
@@ -60,8 +65,10 @@ class OperatorRecord(BaseModel):
 
 
 class Store:
-    def __init__(self) -> None:
+    def __init__(self, strict_epi: bool = False) -> None:
         self._entries: dict[str, Entry] = {}
+        self._epi_dumps: dict[str, dict[str, Any]] = {}
+        self.strict_epi = strict_epi
         self.clock: Tick = 0
         self.log: list[OperatorRecord] = []
 
@@ -70,6 +77,8 @@ class Store:
         if entry.id in self._entries:
             raise KeyError(f"duplicate entry id {entry.id}")
         self._entries[entry.id] = entry
+        if entry.type == EntryType.EPI:
+            self._epi_dumps[entry.id] = entry.model_dump(mode="json")
         return entry
 
     def get(self, id: str) -> Entry:
@@ -94,13 +103,17 @@ class Store:
     def remove(self, id: str) -> Entry:
         """Physically drop an entry. Baselines use this for eviction; THSM never calls it
         on DEON or EPI entries (the invariant checker will report if it does)."""
+        self._epi_dumps.pop(id, None)
         return self._entries.pop(id)
 
     def snapshot(self) -> Snapshot:
-        return Snapshot(
-            t=self.clock,
-            entries={k: v.model_dump(mode="json") for k, v in self._entries.items()},
-        )
+        dumps: dict[str, dict[str, Any]] = {}
+        for k, v in self._entries.items():
+            if v.type == EntryType.DEON:
+                dumps[k] = v.model_dump(mode="json")
+            elif v.type == EntryType.EPI:
+                dumps[k] = v.model_dump(mode="json") if self.strict_epi else self._epi_dumps[k]
+        return Snapshot(t=self.clock, entries=dumps, all_ids=set(self._entries))
 
     # --- operators -----------------------------------------------------------------
     def supersede(self, old_id: str, new: Entry, t: Tick) -> Entry:

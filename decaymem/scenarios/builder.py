@@ -19,6 +19,7 @@ class GrantInfo:
     adjacent: Action  # a similar action outside the scope
     revoked_at: int | None = None
     expiry: int | None = None
+    task_grant: bool = False  # standing grant backing a task; never revoked by the generator
 
 
 @dataclass
@@ -91,9 +92,40 @@ class ScenarioBuilder:
         return self._emit(kind, key=key, value=value)
 
     # --- skills -------------------------------------------------------------------------
-    def task(self, task_id: str, description: str, cmd: str) -> Event:
+    def task(
+        self,
+        task_id: str,
+        description: str,
+        cmd: str,
+        grant_globs: list[str] | None = None,
+        adjacent_cmd: str = "rm -rf /",
+    ) -> Event:
+        """Register a task. Unless `grant_globs` is [], also emit a PRINCIPAL grant per glob so
+        the task's commands are authorised (default: a glob built from the command's last
+        word, e.g. `*test*`)."""
         self.tasks[task_id] = TaskInfo(task_id, description, cmd, history=[cmd])
-        return self._emit(EventKind.TASK, task_id=task_id, description=description, cmd=cmd)
+        ev = self._emit(EventKind.TASK, task_id=task_id, description=description, cmd=cmd)
+        if grant_globs is None:
+            grant_globs = [f"*{cmd.split()[-1]}*"]
+        for i, glob in enumerate(grant_globs):
+            gid = f"g_task_{task_id}_{i}"
+            scope = Scope(tool="run_cmd", args={"cmd": glob})
+            self.grants[gid] = GrantInfo(
+                gid,
+                scope,
+                self.t,
+                Action(tool="run_cmd", args={"cmd": cmd}),
+                Action(tool="run_cmd", args={"cmd": adjacent_cmd}),
+                task_grant=True,
+            )
+            self._emit(
+                EventKind.PERMISSION_GRANT,
+                grant_id=gid,
+                scope=scope.model_dump(),
+                expiry=None,
+                task_grant=True,
+            )
+        return ev
 
     def drift(self, task_id: str, new_cmd: str, note: str = "") -> Event:
         info = self.tasks[task_id]
@@ -115,8 +147,9 @@ class ScenarioBuilder:
         return self._emit(EventKind.PERMISSION_DENY, deny_id=did, scope=scope.model_dump())
 
     def revoke(self, gid: str) -> Event:
-        self.grants[gid].revoked_at = self.t
-        return self._emit(EventKind.PERMISSION_REVOKE, target=gid)
+        g = self.grants[gid]
+        g.revoked_at = self.t
+        return self._emit(EventKind.PERMISSION_REVOKE, target=gid, scope=g.scope.model_dump())
 
     def never(self, action: Action) -> None:
         self.never_actions.append(action)

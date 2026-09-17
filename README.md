@@ -17,19 +17,23 @@ authority gets fabricated or widened. This project builds:
    (API or local) and any memory backend, including third-party ones, with cached,
    reproducible results.
 
-Status: Phase 1 (pipeline) complete. `decaymem/core/` holds the typed state model and the
-I1–I6 invariant checker; `envs/`, `scenarios/`, `grading/`, `memory/`, `writers/`,
-`providers/`, `runner/` form the plugin experiment layer with two type-blind baselines
-(`flat_vector`, `flat_ebbinghaus`), a hand-authored 200-event scenario, a seeded
-generator, and a deterministic dual-scorecard grader. Zero-cost end-to-end runs work with
-the scripted provider; the Anthropic provider is implemented but has not yet been
-exercised live (no credentials in the dev environment). Phase 2 (THSM backend) is next.
-Read the docs in order.
+Status: Phase 2 (THSM) complete. `decaymem/core/` holds the typed state model and the
+I1–I6 invariant checker. The plugin layer has type-blind baselines (`flat_vector`,
+`flat_ebbinghaus`, `flat_actr`, `flat_memworth`), the THSM backend and its ablations
+(`thsm`, `thsm_nopin`, `thsm_nogate`, `typed_nolabels`, `labels_notypes`), four decay
+policies behind one `aggressiveness` knob, freeform and typed writers, pinned compaction,
+and providers for Anthropic, any OpenAI-compatible endpoint (OpenRouter, OpenAI, Ollama,
+vLLM presets) plus a zero-cost scripted agent. The H1 sweep (100 runs) and H3/H5 ablation
+(30 runs) execute end to end and render the frontier plot, so far only with the scripted
+agent: no live model has been run yet for lack of credentials in the dev environment.
+Phase 3 (full matrix with real models) is next. Read the docs in order.
 
 Dev: `uv sync` then `uv run pytest`; lint with `uv run ruff check .`.
-Run: `uv run python -m decaymem.runner --config configs/smoke_dryrun.yaml` (zero cost),
-`configs/gen_dryrun.yaml` (generator, 3 seeds), `configs/smoke_anthropic.yaml` (live;
-needs credentials and `uv sync --extra anthropic`). Results land in `experiments/<name>/results/`.
+Run: `uv run python -m decaymem.runner --config configs/<name>.yaml`, then
+`uv run python -m decaymem.report --experiment <name>` for the table and frontier plot.
+Zero-cost configs: `smoke_dryrun`, `gen_dryrun`, `h1_dryrun`, `h3_dryrun`. Live configs:
+`smoke_anthropic` (needs `uv sync --extra anthropic` and Anthropic credentials) and
+`smoke_openrouter` (needs `OPENROUTER_API_KEY`). Results land in `experiments/<name>/results/`.
 
 | Doc | Contents |
 |---|---|

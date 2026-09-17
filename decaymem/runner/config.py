@@ -25,12 +25,28 @@ class RunConfig(BaseModel):
     compaction: str = "truncate"  # truncate | llm_summary
     retrieval_k: int = 8
     max_tool_iterations: int = 4
-    decay_every: int = 1
+    decay_every: int = 5
     consolidate_every: int = 10
     seeds: list[int] = Field(default_factory=lambda: [0])
     out_dir: str = "experiments"
+    # optional sweep: {backends: [names], params: {key: [values]}, base_params: {...}}
+    sweep: dict[str, Any] | None = None
 
     def backends(self) -> list[dict[str, Any]]:
+        if self.sweep:
+            import itertools
+
+            names = self.sweep.get("backends", [])
+            grid = self.sweep.get("params", {})
+            base = self.sweep.get("base_params", {})
+            keys = list(grid)
+            out = []
+            for name in names:
+                for combo in itertools.product(*(grid[k] for k in keys)):
+                    out.append(
+                        {"name": name, "params": {**base, **dict(zip(keys, combo, strict=True))}}
+                    )
+            return out
         return self.backend if isinstance(self.backend, list) else [self.backend]
 
 

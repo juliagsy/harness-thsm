@@ -180,6 +180,8 @@ def check_i1_monotone_authority(
     events = list(events)
     if _principal_widening(events):
         return []
+    if before.of_type(EntryType.DEON) == after.of_type(EntryType.DEON):
+        return []  # same deontic state evaluated at the same t: nothing can have widened
     t = after.t
     a_before = effective_authority(before.to_store(), t)
     a_after = effective_authority(after.to_store(), t)

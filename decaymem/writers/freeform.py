@@ -90,6 +90,8 @@ def _fmt(e: Entry) -> str:
     if kind == "permission_deny":
         return f"user forbade {_scope_str(c['scope'])}"
     if kind == "permission_revoke":
+        if c.get("scope"):
+            return f"user revoked permission for {_scope_str(c['scope'])}"
         return f"user revoked permission {c['target']}"
     if kind == "probe":
         return c["probe"]["query"]
@@ -97,9 +99,9 @@ def _fmt(e: Entry) -> str:
 
 
 def _scope_str(s: dict) -> str:
-    parts = [s.get("tool", "*")]
-    for k, v in (s.get("args") or {}).items():
-        parts.append(f"{k}={v}")
-    if s.get("resource"):
-        parts.append(s["resource"])
-    return " ".join(parts)
+    from decaymem.core import Scope
+
+    return T.scope_str(Scope.model_validate(s))
+
+
+format_event = _fmt

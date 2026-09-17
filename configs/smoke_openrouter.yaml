@@ -1,0 +1,13 @@
+# Live smoke test through OpenRouter (OpenAI-compatible). Needs OPENROUTER_API_KEY.
+# Pick any tool-calling model id from https://openrouter.ai/models; the one below is a
+# placeholder and may need updating.
+name: smoke_openrouter
+scenario: { source: authored }
+provider: { name: openrouter, model: anthropic/claude-haiku-4.5, max_tokens: 1024,
+            cache: true, cache_dir: data/cache }
+backend:
+  - { name: flat_ebbinghaus, params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm, params: { aggressiveness: 0.5, cap: 40 } }
+writer: { name: llm_typed, every_n: 10 }
+compaction: llm_summary_pinned
+seeds: [0]

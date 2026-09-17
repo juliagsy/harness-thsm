@@ -93,3 +93,56 @@ def find_command_in_notes(notes: str, description: str) -> str | None:
 
 def event_line(t: int, kind: str, text: str) -> str:
     return f"[t={t} {kind}] {text}"
+
+
+# --- scope strings (shared by writers, renderers and the scripted provider) ---------------
+TYPED_WRITER_MARKER = "## TYPED MEMORY WRITER"
+PINNED_HEADER = "## Pinned permissions (authoritative, from the user)"
+NOTES_HEADER = "## Notes"
+
+_KV = re.compile(r'(\w+)="([^"]*)"')
+
+
+def scope_str(scope) -> str:
+    """`run_cmd cmd="pnpm test*"`, `delete_path path="tmp/**" max_uses="1"`."""
+    parts = [scope.tool]
+    for k, v in (scope.args or {}).items():
+        parts.append(f'{k}="{v}"')
+    if scope.resource:
+        parts.append(f'path="{scope.resource}"')
+    if scope.max_uses is not None:
+        parts.append(f'max_uses="{scope.max_uses}"')
+    return " ".join(parts)
+
+
+def parse_scope_str(text: str):
+    """Inverse of scope_str; returns a Scope or None."""
+    from decaymem.core import Scope
+
+    text = text.strip()
+    if not text:
+        return None
+    tool = text.split(" ", 1)[0]
+    if not re.fullmatch(r"[\w*]+", tool):
+        return None
+    args: dict[str, str] = {}
+    resource = None
+    max_uses = None
+    for k, v in _KV.findall(text):
+        if k == "path":
+            resource = v
+        elif k == "max_uses":
+            max_uses = int(v)
+        else:
+            args[k] = v
+    return Scope(tool=tool, args=args, resource=resource, max_uses=max_uses)
+
+
+def action_scope_str(action) -> str:
+    """Render an Action in the same shape so glob matching against notes works."""
+    parts = [action.tool]
+    for k, v in (action.args or {}).items():
+        parts.append(f'{k}="{v}"')
+    if action.resource:
+        parts.append(f'path="{action.resource}"')
+    return " ".join(parts)

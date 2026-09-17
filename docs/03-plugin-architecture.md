@@ -11,13 +11,13 @@ composition of one instance of each.
 
 | Plugin | Responsibility | v1 implementations |
 |---|---|---|
-| `ModelProvider` | Chat completion with tool calling; returns text + structured tool calls; reports token usage | `anthropic`, `openai`, `openai_compat` (vLLM, Ollama, any OpenAI-shaped endpoint), `cached` (wraps any provider) |
+| `ModelProvider` | Chat completion with tool calling; returns text + structured tool calls; reports token usage | `anthropic` (Messages API), `openai_compat` with presets `openrouter`, `openai`, `ollama`, `vllm` (any OpenAI-shaped chat-completions endpoint; OpenRouter gives one key for many vendors' models), `scripted` (deterministic zero-cost stand-in), `cached` (wraps any provider) |
 | `MemoryBackend` | Implements `admit`, `decay`, `consolidate`, `compact`, `retrieve`, `supersede`, `authorize`, `snapshot` | `flat_vector`, `flat_ebbinghaus`, `flat_actr`, `flat_memworth`, `typed_nolabels`, `labels_notypes`, `thsm` |
 | `DecayPolicy` | `activation(entry, now) -> float` and `on_access(entry)` | `none`, `ebbinghaus`, `actr`, `memory_worth`, `budget_evict` |
 | `ConsolidationPolicy` | When and how to merge/summarize; returns new entries with provenance | `never`, `on_cap`, `every_n_events`, `gated` (only after validation) |
 | `CompactionPolicy` | Context-window compaction; may pin entries | `truncate`, `llm_summary`, `llm_summary_pinned` |
 | `RetrievalPolicy` | Scoring and selection into context | `topk_cosine`, `topk_activation`, `topk_activation_pinned_deon` |
-| `Writer` | Turns recent EPI events into SEM/PROC/DEON candidates | `llm_freeform` (one prompt, untyped output), `llm_typed` (schema-constrained, label-aware), `rule_based` (regex/heuristics for deontic events, LLM for the rest) |
+| `Writer` | Turns recent EPI events into SEM/PROC/DEON candidates | `llm_freeform` (one prompt, untyped output), `llm_typed` (JSON lines, one object per entry; labelled DERIVED by L1). The deterministic deontic channel (permission events → PRINCIPAL DEON entries) lives in the THSM backend's `admit_event`, not in a writer |
 | `AuthorizationGate` | Decides whether a proposed tool call executes | `model_decides` (baseline: no gate), `deon_deterministic` |
 | `Environment` | Deterministic tools with recorded traces and scripted outputs | `coding_harness`, later `procurement` |
 | `ScenarioSource` | Yields events and probes | `generator` (seeded), `replay` (from JSONL) |
@@ -107,7 +107,19 @@ hit rate, cost) next to results.
 - **Dry-run mode** replays a scenario with a scripted provider to test the pipeline at
   zero cost.
 
-## 6. Running existing systems through it
+## 6. Status (Phase 2)
+
+Implemented: all providers above except `anthropic` has not yet been exercised live;
+backends `flat_vector`, `flat_ebbinghaus`, `flat_actr`, `flat_memworth`, `thsm`,
+`thsm_nopin`, `thsm_nogate`, `typed_nolabels`, `labels_notypes`; decay policies `none`,
+`ebbinghaus`, `actr`, `memory_worth` with one `aggressiveness` sweep knob; writers
+`llm_freeform`, `llm_typed`; compaction `truncate`, `llm_summary`, `llm_summary_pinned`
+(constraint pinning); the scripted provider's `naive`, `memory_aware`, `refuse_all`
+policies; `decaymem.report` for the summary table and frontier plot. Config `sweep:`
+expands backends × parameter grids. Not yet: third-party memory adapters, `A-belief`
+probes, the procurement domain.
+
+## 7. Running existing systems through it
 
 Third-party memory systems plug in as `MemoryBackend` adapters that ignore operators
 they do not support (they report `unsupported`, which the grader records). A

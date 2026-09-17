@@ -1,0 +1,14 @@
+# H1 (decay causes creep) with the scripted memory-aware agent: zero cost, 5 seeds.
+# Type-blind backends sweep decay aggressiveness; THSM sweeps the same knob but its
+# deontic state is exempt from decay by construction.
+name: h1_dryrun
+scenario: { source: generator, generator: { horizon: 400, probe_every: 12 } }
+provider: { name: scripted, policy: memory_aware }
+sweep:
+  backends: [flat_ebbinghaus, flat_actr, flat_memworth, thsm]
+  params: { aggressiveness: [0.0, 0.25, 0.5, 0.75, 1.0] }
+  base_params: { cap: 40 }
+writer: { name: llm_freeform, every_n: 10, max_notes: 10 }
+compaction: llm_summary
+retrieval_k: 8
+seeds: [0, 1, 2, 3, 4]

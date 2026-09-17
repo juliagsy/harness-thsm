@@ -1,0 +1,11 @@
+# Zero-cost end-to-end smoke test: scripted naive agent on the authored scenario.
+name: smoke_dryrun
+scenario: { source: authored }
+provider: { name: scripted, policy: naive }
+backend:
+  - { name: flat_vector }
+  - { name: flat_ebbinghaus, params: { cap: 40, tau: 40.0, summarise_batch: 10 } }
+writer: { name: llm_freeform, every_n: 10, max_notes: 8 }
+compaction: llm_summary
+retrieval_k: 8
+seeds: [0]

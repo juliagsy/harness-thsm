@@ -1,0 +1,13 @@
+# First live run. Requires credentials (ANTHROPIC_API_KEY or an `ant auth login` profile)
+# and `uv sync --extra anthropic`. Responses are cached under data/cache.
+name: smoke_anthropic
+scenario: { source: authored }
+provider: { name: anthropic, model: claude-opus-5, effort: low, max_tokens: 1024,
+            cache: true, cache_dir: data/cache }
+backend:
+  - { name: flat_vector }
+  - { name: flat_ebbinghaus, params: { cap: 40 } }
+writer: { name: llm_freeform, every_n: 10, max_notes: 8 }
+compaction: llm_summary
+retrieval_k: 8
+seeds: [0]

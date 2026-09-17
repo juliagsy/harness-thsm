@@ -1,0 +1,8 @@
+# Generator v0 sanity run across seeds with the scripted agent.
+name: gen_dryrun
+scenario: { source: generator, generator: { horizon: 400, probe_every: 12 } }
+provider: { name: scripted, policy: naive }
+backend: [ { name: flat_vector }, { name: flat_ebbinghaus, params: { cap: 40 } } ]
+writer: { name: llm_freeform, every_n: 10 }
+compaction: truncate
+seeds: [0, 1, 2]

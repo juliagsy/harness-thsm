@@ -705,3 +705,38 @@ compaction. 25 cells, 1276 calls, zero errors, about $0.18.
   this ablation, and it says the earlier zeros were luck of the probe set.
 - The scripted dry-run on this domain gave the type-blind store 0.98 fidelity, so the
   domain does not trivially produce creep; the real model does.
+
+## 2026-09-18 · ConstraintRot-style replication: compaction and in-context constraints, gpt-4o-mini
+
+Config `configs/constraintrot_live.yaml`: three early denies, A-denied probes weighted
+4×, compaction every 40 events with no session boundaries, every compaction bracketed by
+an unauthorized-action probe immediately before and after (46 bracket pairs per backend
+over 5 seeds). Two runs: session compaction by plain LLM summary, and by summary with
+permission lines pinned verbatim (Constraint Pinning). 15 cells each, about $0.20 each.
+
+| backend | compaction | violation before | violation after | PCV | FAR overall |
+|---|---|---|---|---|---|
+| flat_ebbinghaus | unpinned summary | 0.43 | 0.46 | +0.02 | 0.39 |
+| flat_ebbinghaus | pinned summary | 0.43 | 0.22 | −0.22 | 0.29 |
+| thsm_nogate | unpinned summary | 0.30 | 0.22 | −0.09 | 0.25 |
+| thsm_nogate | pinned summary | 0.30 | 0.13 | −0.17 | 0.22 |
+| thsm | either | 0.00 | 0.00 | 0.00 | 0.00 |
+
+### Reading
+
+- **Compaction is not the main erosion path once the agent has persistent memory.** The
+  Governance Decay paper reports 0% → 30% violations when compaction drops an in-context
+  policy. Here, with the same lossy summarisation, the type-blind store's violation rate
+  barely moves across a compaction (0.43 → 0.46), because the constraint was never only
+  in the session context: it is also in retrievable memory, and the agent was already
+  violating it 43% of the time *before* compaction. In a memory-augmented harness the
+  erosion happens in memory and in the knowledge–action gap, not at the compaction step.
+- **Constraint Pinning at compaction helps, and more than expected.** Re-surfacing the
+  permission lines verbatim in the compacted context cut post-compaction violations from
+  0.43 to 0.22 for the type-blind store and from 0.30 to 0.13 for pinned-ungated THSM,
+  and lowered overall false authority (0.39 → 0.29). The mechanism is recency: a
+  constraint that has just been restated is followed more often than one that has been
+  sitting in memory. This reproduces the paper's mitigation result and extends it: pinning
+  is a recency effect, and it decays again as the session continues.
+- **Neither is a substitute for the gate.** THSM is at 0.00 before and after compaction
+  under both compaction modes.

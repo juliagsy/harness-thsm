@@ -66,6 +66,21 @@ def _parse_grid(text: str) -> Grid | None:
         return None
 
 
+class EchoProvider:
+    """Zero-cost stand-in: states a trivial rule and echoes the input grid. Exercises the
+    protocol (demos, attempts, give-up, decay bookkeeping) without a model."""
+
+    name = "echo"
+    model = "echo"
+
+    def complete(self, *, system: str, messages: list[dict[str, Any]], tools: list) -> ModelReply:
+        text = messages[-1]["content"]
+        if "State the rule." in text:
+            return ModelReply(text="Copy the input grid unchanged.")
+        m = re.search(r"Input: (\[\[.*\]\])\s*$", text, re.S)
+        return ModelReply(text=m.group(1) if m else "[[0]]")
+
+
 class MemoryLearner(BaseLearner):
     def __init__(
         self,
@@ -76,11 +91,16 @@ class MemoryLearner(BaseLearner):
         max_tokens: int = 1500,
         cache_dir: str = "data/cache",
         provider: Any | None = None,
+        max_attempts: int = 3,
+        max_demo_requests: int = 2,
+        grace: int = 3,
     ) -> None:
         from decaymem.dotenv import load_dotenv
         from decaymem.providers import make_provider
 
         load_dotenv()
+        if model == "echo":
+            provider = EchoProvider()
         self.provider = provider or make_provider(
             {
                 "name": "openrouter",
@@ -92,6 +112,9 @@ class MemoryLearner(BaseLearner):
             }
         )
         self.remember = remember
+        self.max_attempts = max_attempts
+        self.grace = grace
+        self.max_demo_requests = max_demo_requests
         self.policy = make_decay(decay, aggressiveness=aggressiveness)
         self.store = Store()
         self.t = 0
@@ -113,34 +136,40 @@ class MemoryLearner(BaseLearner):
         self._tried_without_demos.clear()
 
     def act(self, obs: Observation):
-        self.t += 1
+        self.t = max(self.t + 1, obs.step)  # the schedule step is the clock
         rule = self._rule_for(obs.task_id)
         demos = self._demos.get(obs.task_id, [])
-        if rule is None and not demos and obs.demo_requests_used < obs.demo_cap:
+        # budget per instance: at most `max_attempts` submissions and `max_demo_requests`
+        # demo purchases, then give up (the cap is charged either way; this saves calls)
+        if obs.attempts_used >= self.max_attempts:
+            return GiveUp()
+        if (
+            rule is None
+            and not demos
+            and obs.demo_requests_used < min(obs.demo_cap, self.max_demo_requests)
+        ):
             return RequestDemos()
         if (
             obs.attempts_used > 0
-            and obs.demo_requests_used < obs.demo_cap
+            and obs.demo_requests_used < min(obs.demo_cap, self.max_demo_requests)
             and obs.attempts_used > obs.demo_requests_used
         ):
-            # a wrong attempt on this instance: buy more evidence before trying again
-            return RequestDemos()
-        if rule is None:
+            return RequestDemos()  # a wrong attempt: buy more evidence once, then re-infer
+        if rule is None or obs.attempts_used > 0:
             if demos:
                 rule = self._infer_rule(obs.task_id, demos)
                 self._rederived += 1
-            else:
+            elif rule is None:
                 rule = "(no rule available; infer from the input alone)"
         else:
             self._hits += 1
         grid = self._apply_rule(rule, demos, obs.input)
         if grid is None:
-            if obs.attempts_used >= obs.attempt_cap - 1:
-                return GiveUp()
-            grid = obs.input  # a valid but almost surely wrong grid; costs one attempt
+            return GiveUp() if obs.attempts_used >= self.max_attempts - 1 else Submit(obs.input)
         return Submit(grid)
 
     def observe(self, obs: Observation, action, feedback) -> None:
+        self.t = max(self.t, obs.step)
         tid = obs.task_id
         if isinstance(feedback, DemosFeedback) and not feedback.refused:
             self._demos.setdefault(tid, []).extend((p.input, p.output) for p in feedback.pairs)
@@ -165,7 +194,10 @@ class MemoryLearner(BaseLearner):
             if not e.active_at(self.t):
                 continue
             v = self.policy.update(e, self.t)
-            if thr > 0 and v < thr:
+            last = e.activation.last_access if e.activation and e.activation.last_access else 0
+            # a rule used within the grace window is never an eviction candidate, otherwise
+            # the steepest policies would drop a rule the step after it was learned
+            if thr > 0 and v < thr and self.t - last > self.grace:
                 e.temporal.t_expired = self.t
                 self._evicted += 1
 
@@ -232,4 +264,4 @@ class MemoryLearner(BaseLearner):
         return _parse_grid(r.text)
 
 
-__all__ = ["MemoryLearner"]
+__all__ = ["EchoProvider", "MemoryLearner"]

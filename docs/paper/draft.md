@@ -1,6 +1,6 @@
 # Decay Without Creep: Typed Harness State for Agents That Forget Knowledge but Not Authority
 
-*Draft v0.1, 2026-09-18. Authors: [to be filled]. Code, configs, cached model responses and
+*Draft v0.2, 2026-09-18 (second pass: citations, vector figures, body tables condensed; assumes a 9-page main text with appendices). Authors: [to be filled]. Code, configs, cached model responses and
 per-probe records: `decay-mem` repository (local).*
 
 ## Abstract
@@ -41,18 +41,18 @@ do not cite each other.
 
 The *decay* literature asks how a memory store should forget. MemoryBank applies Ebbinghaus
 curves [Zhong et al. 2023]; FadeMem, FSFM and graph-pruning systems modulate decay by
-relevance, access and age [arXiv:2601.18642, 2604.20300, 2608.28978]; Memory Worth scores
-entries by co-occurrence with success [arXiv:2604.12007]; A-MAC gates admission by a content
-type prior [arXiv:2603.04549]. All of them optimise utility, and none of them exempts any
+relevance, access and age [Wei et al. 2026; Gu et al. 2026; Rusu et al. 2026]; Memory Worth scores
+entries by co-occurrence with success [Simsek 2026]; A-MAC gates admission by a content
+type prior [Zhang et al. 2026]. All of them optimise utility, and none of them exempts any
 class of memory from forgetting.
 
 The *authority* literature asks how an agent's permissions stay correct. Progent enforces
 least privilege with a policy language whose updates may narrow automatically but widen only
-with approval [arXiv:2504.11703]. The Authorization Laundering paper shows LLM memory writers
+with approval [Shi et al. 2025]. The Authorization Laundering paper shows LLM memory writers
 fabricate authority for up to 50% of unauthorized requests under incremental updates, and
-executors act on it 98.6% of the time [arXiv:2609.01836]. Governance Decay shows in-context
-policies are silently dropped by compaction [arXiv:2606.22528], and prohibition-type
-constraints decay in-context while requirement-type ones persist [arXiv:2604.20911]. None
+executors act on it 98.6% of the time [Cerruti et al. 2026]. Governance Decay shows in-context
+policies are silently dropped by compaction [Chen 2026], and prohibition-type
+constraints decay in-context while requirement-type ones persist [Gamage 2026]. None
 of this work has a decay model, and none looks past a single context window.
 
 The two problems are one mechanism seen from two sides. Decay prunes by recency, frequency
@@ -83,28 +83,26 @@ decay schedule can fix it: the store needs a type system.
 ## 2. Background and related work
 
 **Decay and forgetting for utility.** Ebbinghaus-style exponential decay with reinforcement
-on access (MemoryBank; FadeMem, arXiv:2601.18642), ACT-R base-level activation
-[Anderson & Schooler 1991; arXiv HAI 2025 port], outcome-based Memory Worth
-(arXiv:2604.12007), admission control (A-MAC, arXiv:2603.04549) and constrained-retention
-formulations (arXiv:2606.10616) share a scoring view of memory in which nothing is
-protected. The control-plane study (arXiv:2606.15903) observes that production failures are
+on access (MemoryBank; FadeMem, [Wei et al. 2026]), ACT-R base-level activation
+[Anderson and Schooler 1991], outcome-based Memory Worth
+(Simsek 2026), admission control (A-MAC, Zhang et al. 2026) and constrained-retention
+formulations (Kang et al. 2026) share a scoring view of memory in which nothing is
+protected. The control-plane study (Yang 2026) observes that production failures are
 forgetting failures while benchmarks measure recall, and separates a recall plane from a
 mutation plane, a distinction our operator table adopts.
 
 **Consolidation and skill libraries.** Continuous consolidation degrades memory utility
-below the no-memory baseline (arXiv:2605.12978); unbounded skill libraries drift
-(arXiv:2605.19576); SKILL.nb and SkillOps add lifecycle gating (arXiv:2606.08049,
-2605.13716). None separates what a skill does from what it is allowed to do.
+below the no-memory baseline (Zhang et al. 2026); unbounded skill libraries drift
+(Zhang et al. 2026); SKILL.nb and SkillOps add lifecycle gating (Hattami et al. 2026; Pu et al. 2026). None separates what a skill does from what it is allowed to do.
 
-**Authority and constraints.** Progent (arXiv:2504.11703) and SEAgent (arXiv:2601.11893)
+**Authority and constraints.** Progent (Shi et al. 2025) and SEAgent (Ji et al. 2026)
 enforce privilege at the tool boundary; authorization propagation and delegation studies
-(arXiv:2605.05440, 2609.00267) show that authority gated inside the model fails and that
-ordinary operation, not attacks, produces creep. Authorization Laundering (arXiv:2609.01836)
-names the memory-writer failure we build on. Governance Decay (arXiv:2606.22528) and
-omission-constraint decay (arXiv:2604.20911) measure in-context erosion; MemEvoBench and
-"Remembering More, Risking More" (arXiv:2604.15774, 2605.17830) measure safety drift with
-memory length. The SSGM framework and the Always-On Agents survey (arXiv:2603.11768,
-2606.30306) supply the vocabulary of authority, scope, mutability and provenance, and note
+(Tallam 2026; Dantuluri and Sundi 2026) show that authority gated inside the model fails and that
+ordinary operation, not attacks, produces creep. Authorization Laundering (Cerruti et al. 2026)
+names the memory-writer failure we build on. Governance Decay (Chen 2026) and
+omission-constraint decay (Gamage 2026) measure in-context erosion; MemEvoBench and
+"Remembering More, Risking More" (Xie et al. 2026; Al-Tawaha et al. 2026) measure safety drift with
+memory length. The SSGM framework and the Always-On Agents survey (Lam et al. 2026; Ding et al. 2026) supply the vocabulary of authority, scope, mutability and provenance, and note
 that the field studies accumulating state far more than relinquishing it.
 
 **Gap.** No prior system (a) types harness state, (b) exempts deontic state from decay and
@@ -239,43 +237,23 @@ numbers come from it.
 
 ### 6.1 Main ablation: four model families, two domains
 
-Table 1. H3/H5 ablation. FAR = false-authority rate (lower is better); utility = mean of
-KUA, SSR and 1−REGRESS; INV = invariant violations per run. Five seeds each.
+Table 1. False authority (FAR) and utility for the main stores, five seeds each. The full
+ablation with revocation survival, generalization, legitimate rejections and invariant
+counts is Table C1.
 
-| model / domain | store | FAR | RSR | GEN | LRR | utility | INV |
-|---|---|---|---|---|---|---|---|
-| gpt-4o-mini / coding | type-blind (Ebbinghaus) | 0.40 | 0.44 | 0.42 | 0.33 | 0.70 | 0 |
-| | labels only | 0.68 | 0.23 | 0.63 | 0.00 | 0.73 | 0 |
-| | types only | 0.00 | 1.00 | 0.00 | 0.00 | 0.79 | 16.2 |
-| | THSM, no gate | 0.27 | 0.90 | 0.27 | 0.00 | 0.75 | 0 |
-| | THSM, no pinning | 0.00 | 1.00 | 0.00 | 0.00 | 0.73 | 0 |
-| | THSM, tool-only pinning | 0.00 | 1.00 | 0.00 | 0.00 | 0.65 | 0 |
-| | **THSM** | **0.00** | 1.00 | 0.00 | 0.00 | 0.73 | 0 |
-| gemini-2.5-flash-lite / coding | type-blind | 0.62 | 0.17 | 0.57 | 0.00 | 0.40 | 0 |
-| | labels only | 0.61 | 0.28 | 0.70 | 0.00 | 0.38 | 0 |
-| | types only | 0.00 | 1.00 | 0.00 | 0.00 | 0.43 | 15.8 |
-| | THSM, no gate | 0.55 | 0.15 | 0.58 | 0.33 | 0.47 | 0 |
-| | THSM, no pinning | 0.00 | 1.00 | 0.00 | 0.33 | 0.40 | 0 |
-| | **THSM** | **0.00** | 1.00 | 0.00 | 0.00 | 0.46 | 0 |
-| qwen3-coder-30b / coding | type-blind | 0.58 | 0.23 | 0.56 | 0.00 | 0.53 | 0 |
-| | labels only | 0.70 | 0.10 | 0.65 | 0.00 | 0.56 | 0 |
-| | types only | 0.00 | 1.00 | 0.00 | 0.00 | 0.70 | 50.0 |
-| | THSM, no gate | 0.60 | 0.27 | 0.73 | 0.00 | 0.51 | 0 |
-| | **THSM** | **0.00** | 1.00 | 0.00 | 0.00 | 0.56 | 0 |
-| claude-sonnet-5 / coding | type-blind | 0.27 | 0.87 | 0.35 | 0.00 | 0.55 | 0 |
-| | labels only | 0.45 | 0.47 | 0.45 | 0.00 | 0.41 | 0 |
-| | types only | 0.00 | 1.00 | 0.00 | 0.00 | 0.54 | 15.6 |
-| | THSM, no gate | 0.22 | 1.00 | 0.35 | 0.00 | 0.51 | 0 |
-| | THSM, no pinning | 0.00 | 1.00 | 0.00 | 0.00 | 0.42 | 0 |
-| | **THSM** | **0.00** | 1.00 | 0.00 | 0.00 | 0.56 | 0 |
-| gpt-4o-mini / coding, freeform writer | type-blind | 0.54 | 0.37 | 0.50 | 0.00 | 0.80 | 0 |
-| | **Mem0** (external, own extraction LLM) | 0.39 | 0.83 | 0.43 | 0.00 | 0.82 | 0 |
-| | THSM | 0.00 | 1.00 | 0.00 | 0.00 | 0.77 | 0 |
-| gpt-4o-mini / procurement | type-blind | 0.29 | 0.65 | 0.35 | 0.00 | 0.74 | 0 |
-| | labels only | 0.41 | 0.38 | 0.42 | 0.00 | 0.71 | 0 |
-| | types only | 0.02 | 0.95 | 0.00 | 0.00 | 0.74 | 16.8 |
-| | THSM, no gate | 0.20 | 0.95 | 0.48 | 0.00 | 0.74 | 0 |
-| | **THSM** | **0.00** | 1.00 | 0.00 | 0.00 | 0.74 | 0 |
+| model / domain | type-blind FAR | labels-only FAR | pinned, no gate FAR | THSM FAR | utility: type-blind → THSM |
+|---|---|---|---|---|---|
+| gpt-4o-mini / coding | 0.40 | 0.68 | 0.27 | 0.00 | 0.70 → 0.73 |
+| gemini-2.5-flash-lite / coding | 0.62 | 0.61 | 0.55 | 0.00 | 0.40 → 0.46 |
+| qwen3-coder-30b / coding | 0.58 | 0.70 | 0.60 | 0.00 | 0.53 → 0.56 |
+| claude-sonnet-5 / coding | 0.27 | 0.45 | 0.22 | 0.00 | 0.55 → 0.56 |
+| gpt-4o-mini / procurement | 0.29 | 0.41 | 0.20 | 0.00 | 0.74 → 0.74 |
+| gpt-4o-mini / coding, external Mem0 store | 0.54 (flat) / 0.39 (Mem0) | – | – | 0.00 | 0.80 / 0.82 → 0.77 |
+
+![](figures/fig1_far_by_family.pdf)
+
+*Figure 1. False authority for four stores across four model families and two domains (the
+full ablation with utility and invariant counts is Table C1 in the appendix).*
 
 Four regularities hold across every family and both domains.
 
@@ -335,11 +313,15 @@ the collapse at full decay (0.64 → 0.40 vs 0.61 → 0.48 for Ebbinghaus): know
 decay exactly as much; deontic state not at all. On gemini-2.5-flash-lite the same sweep
 starts at 0.67–0.76 and ends at 0.75–0.89, with Ebbinghaus flat.
 
-![](../results/h1_live_gpt-4o-mini_frontier_15seeds.png)
+![](figures/fig2_decay_sweep.pdf)
 
-*Figure 1. Utility–authority frontier for the decay sweep on gpt-4o-mini. Labels are decay
-aggressiveness. Type-blind curves drift down and left as decay tightens; THSM moves only
-left.*
+*Figure 2. False authority against decay aggressiveness for the three type-blind policies and
+THSM, gpt-4o-mini, 15 seeds per type-blind point.*
+
+![](figures/fig3_frontier.pdf)
+
+*Figure 3. Utility–authority frontier for the same sweep. Type-blind curves drift down and
+left as decay tightens; THSM moves only left.*
 
 ### 6.3 Skills carry authority (H6) and the knowledge–action gap
 
@@ -395,6 +377,10 @@ pooled over five seeds (three early denies, A-denied probes weighted 6×).
 | | Memory Worth | 0.44 | 0.37 | 0.38 | 0.41 |
 | | THSM, no gate | 0.78 | 0.62 | 0.60 | 0.52 |
 | | THSM | 1.00 | 1.00 | 1.00 | 1.00 |
+
+![](figures/fig4_depth.pdf)
+
+*Figure 4. Prohibition compliance by depth since the DENY, two models.*
 
 ACT-R memory produces a clean depth curve on both models (0.72 → 0.18, 0.39 → 0.12): the
 persistent-memory analogue of in-context omission-constraint decay. Ebbinghaus, which
@@ -462,7 +448,7 @@ gate, driven entirely by scope generalization).
 **Why the knowledge–action gap matters for governance design.** The belief probe shows the
 failure is not recall. Models restate the constraint and act against it when a plausible
 request arrives. This is consistent with the in-context finding that prohibitions lose
-force while requirements hold (arXiv:2604.20911): a request is a requirement-shaped
+force while requirements hold (Gamage 2026): a request is a requirement-shaped
 pressure, and the prohibition competes with it. It argues against any design that relies
 on the model *knowing* its permissions, including pinning, re-injection and system-prompt
 hardening, as anything more than a mitigation.
@@ -511,41 +497,33 @@ labels without a deontic channel erode the very prohibitions they were meant to 
 
 ## References
 
-- Anderson, J. R., & Schooler, L. J. (1991). Reflections of the environment in memory.
-  Psychological Science.
-- Zhong et al. (2023). MemoryBank: Enhancing large language models with long-term memory.
-- FadeMem: Biologically-inspired forgetting for efficient agent memory. arXiv:2601.18642.
-- FSFM: A biologically-inspired framework for selective forgetting of agent memory.
-  arXiv:2604.20300.
-- Selective forgetting: a graph-based memory framework for long-term LLM agents.
-  arXiv:2608.28978.
-- When to forget: a memory governance primitive (Memory Worth). arXiv:2604.12007.
-- Adaptive memory admission control for LLM agents (A-MAC). arXiv:2603.04549.
-- Learning what to remember: observability-safe memory retention. arXiv:2606.10616.
-- Control-plane placement shapes forgetting. arXiv:2606.15903.
-- Useful memories become faulty when continuously updated by LLMs. arXiv:2605.12978.
-- Library drift: a silent failure mode in self-evolving LLM skill libraries. arXiv:2605.19576.
-- SKILL.nb: selective formalization and gated execution for durable agent workflows.
-  arXiv:2606.08049.
-- SkillOps: managing LLM agent skill libraries as self-maintaining software ecosystems.
-  arXiv:2605.13716.
-- Progent: programmable privilege control for LLM agents. arXiv:2504.11703.
-- Taming privilege escalation in LLM-based agent systems: a mandatory access control
-  framework (SEAgent). arXiv:2601.11893.
-- Authorization propagation in multi-agent AI systems. arXiv:2605.05440.
-- Delegation without trust: identity, authorization and runtime governance in multi-agent
-  LLM systems. arXiv:2609.00267.
-- Agent memory is a surface for endogenous authorization laundering. arXiv:2609.01836.
-- Governance decay: how context compaction silently erases safety constraints (ConstraintRot).
-  arXiv:2606.22528.
-- Omission constraints decay while commission constraints persist in long-context LLM agents.
-  arXiv:2604.20911.
-- MemEvoBench: benchmarking safety risks from memory misevolution. arXiv:2604.15774.
-- Remembering more, risking more: longitudinal safety risks in memory-equipped agents.
-  arXiv:2605.17830.
-- Governing evolving memory in LLM agents (SSGM). arXiv:2603.11768.
-- Always-on agents: a survey of persistent memory, state and governance. arXiv:2606.30306.
+- Anderson, J. R., & Schooler, L. J. (1991). Reflections of the environment in memory. Psychological Science, 2(6), 396–408.
 - Biba, K. J. (1977). Integrity considerations for secure computer systems. MITRE TR-3153.
+- Zhong, W., Guo, L., Gao, Q., Ye, H., & Wang, Y. (2023). MemoryBank: Enhancing large language models with long-term memory. arXiv:2305.10250.
+- Ahmad Al-Tawaha, Shangding Gu, Peizhi Niu, Ruoxi Jia, Ming Jin (2026). Remembering More, Risking More: Longitudinal Safety Risks in Memory-Equipped LLM Agents. arXiv:2605.17830.
+- Tommaso Cerruti, Mika Okamoto, Ansel Kaplan Erol (2026). Agent Memory Is a Surface for Endogenous Authorization Laundering. arXiv:2609.01836.
+- Shiyang Chen (2026). Governance Decay: How Context Compaction Silently Erases Safety Constraints in Long-Horizon LLM Agents. arXiv:2606.22528.
+- Panduranga Sai Varma Dantuluri, Jyotirmoy Sundi (2026). Delegation Without Trust: An Empirical Gap Analysis of Identity, Authorization, and Runtime Governance in Multi-Agent LLM Systems. arXiv:2609.00267.
+- Tianyu Ding, Aditya Nannapaneni, Bingfan Liu, Ling Zhang (2026). Always-On Agents: A Survey of Persistent Memory, State, and Governance in LLM Agents. arXiv:2606.30306.
+- Pengfei Du (2026). Memory for Autonomous LLM Agents: Mechanisms, Evaluation, and Emerging Frontiers. arXiv:2603.07670.
+- Yeran Gamage (2026). Omission Constraints Decay While Commission Constraints Persist in Long-Context LLM Agents. arXiv:2604.20911.
+- Yingjie Gu, Wenjian Xiong, Liqiang Wang, Pengcheng Ren, Chao Li, Xiaojing Zhang et al. (2026). FSFM: A Biologically-Inspired Framework for Selective Forgetting of Agent Memory. arXiv:2604.20300.
+- Amine El Hattami, Nicolas Chapados, Christopher Pal (2026). SKILL.nb: Selective Formalization and Gated Execution for Durable Agent Workflows. arXiv:2606.08049.
+- Zimo Ji, Daoyuan Wu, Wenyuan Jiang, Pingchuan Ma, Zongjie Li, Yudong Gao et al. (2026). Taming Various Privilege Escalation in LLM-Based Agent Systems: A Mandatory Access Control Framework. arXiv:2601.11893.
+- Qingcan Kang, Liu Mingyang, Shixiong Kai, Kaichao Liang, Tao Zhong, Mingxuan Yuan (2026). Learning What to Remember: Observability-Safe Memory Retention via Constrained Optimization for Long-Horizon Language Agents. arXiv:2606.10616.
+- Chingkwun Lam, Jiaxin Li, Lingfei Zhang, Kuo Zhao (2026). Governing Evolving Memory in LLM Agents: Risks, Mechanisms, and the Stability and Safety Governed Memory (SSGM) Framework. arXiv:2603.11768.
+- Hongji Pu, Xinyuan Song, Liang Zhao (2026). SkillOps: Managing LLM Agent Skill Libraries as Self-Maintaining Software Ecosystems. arXiv:2605.13716.
+- Preston Rasmussen, Pavlo Paliychuk, Travis Beauvais, Jack Ryan, Daniel Chalef (2025). Zep: A Temporal Knowledge Graph Architecture for Agent Memory. arXiv:2501.13956.
+- Theo Rusu, Sourena Khanzadeh, Manar Alalfi (2026). Selective Forgetting: A Graph-Based Memory Framework for Long-Term LLM Agents. arXiv:2608.28978.
+- Tianneng Shi, Jingxuan He, Zhun Wang, Hongwei Li, Linyu Wu, Wenbo Guo et al. (2025). Progent: Securing AI Agents with Privilege Control. arXiv:2504.11703.
+- Baris Simsek (2026). When to Forget: A Memory Governance Primitive. arXiv:2604.12007.
+- Krti Tallam (2026). Authorization Propagation in Multi-Agent AI Systems: Identity Governance as Infrastructure. arXiv:2605.05440.
+- Lei Wei, Xiao Peng, Xu Dong, Niantao Xie, Bin Wang (2026). FadeMem: Biologically-Inspired Forgetting for Efficient Agent Memory. arXiv:2601.18642.
+- Weiwei Xie, Shaoxiong Guo, Fan Zhang, Tian Xia, Xue Yang, Lizhuang Ma et al. (2026). MemEvoBench: Benchmarking Safety Risks from Memory Misevolution in LLM Agents. arXiv:2604.15774.
+- Dongxu Yang (2026). Control-Plane Placement Shapes Forgetting: An Architectural Study of Agent Memory Across Thirteen System Configurations. arXiv:2606.15903.
+- Dylan Zhang, Yanshan Lin, Zhengkun Wu, Yihang Sun, Bingxuan Li, Dianqi Li et al. (2026). Useful Memories Become Faulty When Continuously Updated by LLMs. arXiv:2605.12978.
+- Xing Zhang, Yanwei Cui, Guanghui Wang, Ziyuan Li, Wei Qiu, Bing Zhu et al. (2026). Library Drift: Diagnosing and Fixing a Silent Failure Mode in Self-Evolving LLM Skill Libraries. arXiv:2605.19576.
+- Guilin Zhang, Wei Jiang, Xiejiashan Wang, Aisha Behr, Kai Zhao, Jeffrey Friedman et al. (2026). Adaptive Memory Admission Control for LLM Agents. arXiv:2603.04549.
 
 ## Appendix A. Reproduction
 
@@ -565,3 +543,43 @@ with NaNs skipped. Authority fidelity = 1 − FAR, where FAR pools revoked, adja
 never-granted and revoked-skill probes. Depth bins pool 20-tick buckets of per-probe
 compliance. All means are over seeds; intervals in Table 2 are normal approximations over
 15 seeds.
+
+## Appendix C. Full ablation table
+
+Table C1. H3/H5 ablation, all metrics. FAR = false-authority rate (lower is better); utility = mean of
+KUA, SSR and 1−REGRESS; INV = invariant violations per run. Five seeds each.
+
+| model / domain | store | FAR | RSR | GEN | LRR | utility | INV |
+|---|---|---|---|---|---|---|---|
+| gpt-4o-mini / coding | type-blind (Ebbinghaus) | 0.40 | 0.44 | 0.42 | 0.33 | 0.70 | 0 |
+| | labels only | 0.68 | 0.23 | 0.63 | 0.00 | 0.73 | 0 |
+| | types only | 0.00 | 1.00 | 0.00 | 0.00 | 0.79 | 16.2 |
+| | THSM, no gate | 0.27 | 0.90 | 0.27 | 0.00 | 0.75 | 0 |
+| | THSM, no pinning | 0.00 | 1.00 | 0.00 | 0.00 | 0.73 | 0 |
+| | THSM, tool-only pinning | 0.00 | 1.00 | 0.00 | 0.00 | 0.65 | 0 |
+| | **THSM** | **0.00** | 1.00 | 0.00 | 0.00 | 0.73 | 0 |
+| gemini-2.5-flash-lite / coding | type-blind | 0.62 | 0.17 | 0.57 | 0.00 | 0.40 | 0 |
+| | labels only | 0.61 | 0.28 | 0.70 | 0.00 | 0.38 | 0 |
+| | types only | 0.00 | 1.00 | 0.00 | 0.00 | 0.43 | 15.8 |
+| | THSM, no gate | 0.55 | 0.15 | 0.58 | 0.33 | 0.47 | 0 |
+| | THSM, no pinning | 0.00 | 1.00 | 0.00 | 0.33 | 0.40 | 0 |
+| | **THSM** | **0.00** | 1.00 | 0.00 | 0.00 | 0.46 | 0 |
+| qwen3-coder-30b / coding | type-blind | 0.58 | 0.23 | 0.56 | 0.00 | 0.53 | 0 |
+| | labels only | 0.70 | 0.10 | 0.65 | 0.00 | 0.56 | 0 |
+| | types only | 0.00 | 1.00 | 0.00 | 0.00 | 0.70 | 50.0 |
+| | THSM, no gate | 0.60 | 0.27 | 0.73 | 0.00 | 0.51 | 0 |
+| | **THSM** | **0.00** | 1.00 | 0.00 | 0.00 | 0.56 | 0 |
+| claude-sonnet-5 / coding | type-blind | 0.27 | 0.87 | 0.35 | 0.00 | 0.55 | 0 |
+| | labels only | 0.45 | 0.47 | 0.45 | 0.00 | 0.41 | 0 |
+| | types only | 0.00 | 1.00 | 0.00 | 0.00 | 0.54 | 15.6 |
+| | THSM, no gate | 0.22 | 1.00 | 0.35 | 0.00 | 0.51 | 0 |
+| | THSM, no pinning | 0.00 | 1.00 | 0.00 | 0.00 | 0.42 | 0 |
+| | **THSM** | **0.00** | 1.00 | 0.00 | 0.00 | 0.56 | 0 |
+| gpt-4o-mini / coding, freeform writer | type-blind | 0.54 | 0.37 | 0.50 | 0.00 | 0.80 | 0 |
+| | **Mem0** (external, own extraction LLM) | 0.39 | 0.83 | 0.43 | 0.00 | 0.82 | 0 |
+| | THSM | 0.00 | 1.00 | 0.00 | 0.00 | 0.77 | 0 |
+| gpt-4o-mini / procurement | type-blind | 0.29 | 0.65 | 0.35 | 0.00 | 0.74 | 0 |
+| | labels only | 0.41 | 0.38 | 0.42 | 0.00 | 0.71 | 0 |
+| | types only | 0.02 | 0.95 | 0.00 | 0.00 | 0.74 | 16.8 |
+| | THSM, no gate | 0.20 | 0.95 | 0.48 | 0.00 | 0.74 | 0 |
+| | **THSM** | **0.00** | 1.00 | 0.00 | 0.00 | 0.74 | 0 |

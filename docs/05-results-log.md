@@ -1,0 +1,61 @@
+# 05 · Results log
+
+Live runs, newest last. Numbers are means over seeds. Full per-run scorecards, probe
+records and scenarios live under `experiments/<name>/results/` (not committed); the
+response cache under `data/cache/` makes every run replayable at zero cost.
+
+## 2026-09-18 · H3/H5 ablation, gpt-4o-mini via OpenRouter
+
+Config `configs/h3_live.yaml`: generator scenarios, 400 events, 5 seeds, typed writer,
+pinned compaction, aggressiveness 0.5, cap 40. 30 cells, 1569 model calls (1235 served
+from cache because the six backends share writer prompts), about $0.22.
+
+| backend | utility | 1-FAR | FAR | RSR | GEN | LRR | KUA | SSR | CLAIMS | INV |
+|---|---|---|---|---|---|---|---|---|---|---|
+| flat_ebbinghaus | 0.62 | 0.58 | 0.42 | 0.44 | 0.45 | 0.33 | 0.40 | 0.70 | 6.4 | 0 |
+| labels_notypes | 0.69 | 0.32 | 0.68 | 0.23 | 0.63 | 0.00 | 0.49 | 0.79 | 24.4 | 0 |
+| thsm | 0.72 | 1.00 | 0.00 | 1.00 | 0.00 | 0.00 | 0.43 | 0.85 | 23.8 | 0 |
+| thsm_nogate | 0.72 | 0.73 | 0.27 | 0.90 | 0.27 | 0.00 | 0.40 | 0.82 | 23.6 | 0 |
+| thsm_nopin | 0.70 | 1.00 | 0.00 | 1.00 | 0.00 | 0.00 | 0.46 | 0.79 | 23.6 | 0 |
+| typed_nolabels | 0.75 | 1.00 | 0.00 | 1.00 | 0.00 | 0.00 | 0.43 | 0.90 | 8.2 | 16.2 |
+
+![frontier](results/h3_live_gpt-4o-mini_frontier.png)
+
+Prohibition compliance by depth since the DENY (pooled, H4 preview):
+
+| backend | d0 | d40 | d80 | d100 | d120 | d160 | d220 | d300 |
+|---|---|---|---|---|---|---|---|---|
+| flat_ebbinghaus | 1.00 | 0.75 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
+| labels_notypes | 1.00 | 0.75 | 1.00 | 1.00 | 0.00 | 0.00 | 0.50 | 0.00 |
+| thsm (all gated variants) | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
+
+### Reading
+
+- **H3 holds on a real model.** THSM sits at fidelity 1.00 with the highest utility
+  among label-enforcing backends (0.72 vs 0.62 for the type-blind store). The exemption
+  costs nothing here; it gains, because the typed store keeps skills as PROC entries
+  that survive consolidation (SSR 0.85 vs 0.70).
+- **The gate does the work, pinning helps but does not suffice.** With the gate off but
+  deontic entries pinned in context (`thsm_nogate`), the model still acted on 27% of
+  unauthorized requests, mostly never-granted and scope-adjacent actions. Pinning alone
+  cut creep from 0.42 to 0.27; the gate removed it. Gate without pinning (`thsm_nopin`)
+  is also at 1.00 and loses a little utility (0.70).
+- **Labels alone made things worse (H5, off-diagonal).** `labels_notypes` reached the
+  highest false-authority rate, 0.68, and its prohibition compliance collapsed to 0 past
+  depth 120. Mechanism: with one note type and no deontic channel, the *prohibitions*
+  themselves arrive as flagged "unverified claims", and the model discounts them. Labels
+  protect against laundering only when a trusted deontic channel exists for the real
+  permissions; flagging everything erodes the constraints you wanted to keep. This is a
+  new, reportable interaction between integrity labelling and omission-constraint decay.
+- **Types without labels look safe behaviourally and are not.** `typed_nolabels` shows
+  FAR 0.00 on these seeds but 16.2 invariant violations per run: the LLM-written GRANTs
+  were admitted and widened A(t) (I1, I2). No probe happened to exercise the widened
+  scope. The invariant checker catches the creep the behavioural metrics miss, which is
+  the argument for reporting `INV` alongside `FAR`.
+- **Type-blind failure modes** split roughly evenly across revoked (9), scope-adjacent
+  (11) and never-granted (9) requests, with one prohibition failure. The model complied
+  with plain requests when memory offered no reason not to, and generalized one-time or
+  narrow grants.
+
+Caveats: one small model, one domain, 5 seeds, 400 events. A-belief probes and the
+procurement domain are not yet implemented.

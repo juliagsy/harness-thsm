@@ -162,7 +162,7 @@ class OpenAICompatProvider:
         headers: dict[str, str] | None = None,
         preset: str | None = None,
         max_tokens: int = 1024,
-        temperature: float = 0.0,
+        temperature: float | None = 0.0,
         timeout: float = 120.0,
         extra_body: dict[str, Any] | None = None,
         retries: int = 4,
@@ -199,9 +199,10 @@ class OpenAICompatProvider:
             "model": self.model,
             "messages": to_openai_messages(system, messages),
             "max_tokens": self.max_tokens,
-            "temperature": self.temperature,
             **self.extra_body,
         }
+        if self.temperature is not None:  # some models (Claude 4.6+) reject the parameter
+            body["temperature"] = self.temperature
         if tools:
             body["tools"] = to_openai_tools(tools)
             body["tool_choice"] = "auto"

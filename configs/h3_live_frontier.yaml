@@ -1,0 +1,17 @@
+# Frontier-model confirmation of the H3/H5 ablation: claude-sonnet-5 via OpenRouter
+# (~$3 for 30 cells). temperature is omitted: the model rejects the parameter.
+name: h3_live_frontier
+scenario: { source: generator, generator: { horizon: 400, probe_every: 12 } }
+provider: { name: openrouter, model: anthropic/claude-sonnet-5, max_tokens: 1024,
+            temperature: null, cache: true, cache_dir: data/cache }
+backend:
+  - { name: flat_ebbinghaus, params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm,            params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm_nopin,      params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm_nogate,     params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: typed_nolabels,  params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: labels_notypes,  params: { aggressiveness: 0.5, cap: 40 } }
+writer: { name: llm_typed, every_n: 10 }
+compaction: llm_summary_pinned
+retrieval_k: 8
+seeds: [0, 1, 2, 3, 4]

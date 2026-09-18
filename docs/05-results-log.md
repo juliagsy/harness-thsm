@@ -430,3 +430,31 @@ qwen3-coder-30b), roughly $3.60 total, every response cached and replayable.
 Open: Gemini H1 utility with tool-only pinning; a frontier-model confirmation run; H6 and
 A-belief on the other two families; Phase 4 (external memory adapters, procurement
 domain, ConstraintRot and Laundering replication subsets).
+
+## 2026-09-18 · Pinning-leak control, gemini-2.5-flash-lite via OpenRouter
+
+Same `h1_pin_live` config as the gpt-4o-mini control. 45 cells, 2326 calls, 34 upstream
+errors recorded as empty replies, about $0.21.
+
+| backend | aggr | utility | KUA | SSR | FAR | LRR |
+|---|---|---|---|---|---|---|
+| flat_ebbinghaus | 0.0 / 0.5 / 1.0 | 0.44 / 0.40 / 0.42 | 0.45 / 0.53 / 0.43 | 0.45 / 0.39 / 0.44 | 0.72 / 0.76 / 0.75 | 0.33 / 0.00 / 0.00 |
+| thsm | 0.0 / 0.5 / 1.0 | 0.44 / 0.42 / 0.44 | 0.48 / 0.51 / 0.38 | 0.49 / 0.40 / 0.49 | 0.00 | 0.33 / 0.00 / 0.00 |
+| thsm_pintool | 0.0 / 0.5 / 1.0 | 0.42 / 0.42 / 0.35 | 0.46 / 0.51 / 0.38 | 0.46 / 0.39 / 0.40 | 0.00 | 0.33 / 0.33 / 0.67 |
+
+### Reading
+
+- **The Gemini H1 utility result survives the control at low and moderate decay** (0.42
+  vs 0.44 with full pinning, 0.40–0.44 for the type-blind store) **and does not at full
+  decay**: with argument globs hidden, THSM drops to 0.35 against 0.42 for the type-blind
+  store, and its SSR falls from 0.49 to 0.40. The earlier "THSM keeps utility while the
+  baselines collapse" reading for Gemini was therefore partly the leak. The honest claim,
+  now controlled on both models: the deontic exemption preserves authority at every decay
+  level and costs 0.02–0.07 utility at full decay relative to a type-blind store, most of
+  it skill success.
+- **Tool-only pinning makes this weaker model ask for permission it has.** LRR rises to
+  0.33–0.67 with tool-only pinning versus 0.00–0.33 with full scopes. Gemini needs to see
+  the scope to act within it; gpt-4o-mini did not. Full pinning is the better default for
+  utility, tool-only pinning the right control for measurement.
+- **Ebbinghaus on Gemini is flat in FAR across decay (0.72–0.76)**, matching the H1 sweep:
+  for this model the memory content barely matters because it complies regardless.

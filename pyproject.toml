@@ -13,7 +13,7 @@ dependencies = [
 
 [project.optional-dependencies]
 anthropic = ["anthropic>=0.50"]
-mem0 = ["mem0ai>=0.1.100"]
+mem0 = ["mem0ai>=0.1.100", "sentence-transformers>=3.0"]
 
 [dependency-groups]
 dev = [

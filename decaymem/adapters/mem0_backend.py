@@ -78,19 +78,46 @@ class RealMem0Client:
     """
 
     def __init__(self, config: dict[str, Any] | None = None) -> None:
+        import copy
+        import os
+        import uuid
+
+        os.environ.setdefault("MEM0_TELEMETRY", "False")
         from mem0 import Memory  # optional dependency: uv sync --extra mem0
 
-        self.mem = Memory.from_config(config) if config else Memory()
+        cfg = copy.deepcopy(config) if config else None
+        if cfg:
+            llm = cfg.get("llm", {}).get("config", {})
+            base = str(llm.get("openai_base_url", ""))
+            if "api_key" not in llm:
+                # route Mem0's own LLM through the same key the agent uses
+                env = "OPENROUTER_API_KEY" if "openrouter" in base else "OPENAI_API_KEY"
+                if os.environ.get(env):
+                    llm["api_key"] = os.environ[env]
+            vs = cfg.get("vector_store", {}).get("config", {})
+            if "path" in vs:
+                # one local vector store per backend instance: qdrant-local is single-process
+                vs["path"] = f"{vs['path']}/{uuid.uuid4().hex[:8]}"
+            emb = cfg.get("embedder", {})
+            if emb.get("provider") == "huggingface" and "embedding_model_dims" not in vs:
+                vs["embedding_model_dims"] = emb.get("config", {}).get("embedding_dims", 384)
+        self.mem = Memory.from_config(cfg) if cfg else Memory()
 
     def add(self, text: str, *, user_id: str, metadata: dict[str, Any] | None = None) -> Any:
         return self.mem.add(text, user_id=user_id, metadata=metadata or {})
 
     def search(self, query: str, *, user_id: str, limit: int) -> list[dict[str, Any]]:
-        res = self.mem.search(query, user_id=user_id, limit=limit)
+        try:  # mem0 >= 2.x takes entity filters; older versions take user_id
+            res = self.mem.search(query, filters={"user_id": user_id}, limit=limit)
+        except (TypeError, ValueError):
+            res = self.mem.search(query, user_id=user_id, limit=limit)
         return res.get("results", res) if isinstance(res, dict) else res
 
     def get_all(self, *, user_id: str) -> list[dict[str, Any]]:
-        res = self.mem.get_all(user_id=user_id)
+        try:
+            res = self.mem.get_all(filters={"user_id": user_id})
+        except (TypeError, ValueError):
+            res = self.mem.get_all(user_id=user_id)
         return res.get("results", res) if isinstance(res, dict) else res
 
 

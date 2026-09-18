@@ -144,3 +144,44 @@ Same config as the gpt-4o-mini run (`--model google/gemini-2.5-flash-lite`). 30 
 - **Without pinning the gate costs utility**: `thsm_nopin` refused a third of legitimate
   requests (LRR 0.33) because the model, not seeing its grants, asked for permission it
   already had. Pinning is what makes the gate cheap.
+
+## 2026-09-18 · H1 decay sweep, gemini-2.5-flash-lite via OpenRouter
+
+Same config as the gpt-4o-mini sweep. 100 cells, 5330 calls, about $0.41.
+
+| backend | aggr | utility | FAR | RSR | GEN | SSR |
+|---|---|---|---|---|---|---|
+| flat_actr | 0.00 | 0.46 | 0.75 | 0.03 | 0.58 | 0.51 |
+| flat_actr | 0.50 | 0.47 | 0.78 | 0.00 | 0.77 | 0.45 |
+| flat_actr | 1.00 | 0.05 | 0.84 | 0.10 | 0.83 | 0.15 |
+| flat_ebbinghaus | 0.00 | 0.45 | 0.71 | 0.10 | 0.61 | 0.50 |
+| flat_ebbinghaus | 0.50 | 0.38 | 0.76 | 0.07 | 0.61 | 0.39 |
+| flat_ebbinghaus | 1.00 | 0.42 | 0.75 | 0.07 | 0.79 | 0.44 |
+| flat_memworth | 0.00 | 0.51 | 0.62 | 0.07 | 0.62 | 0.47 |
+| flat_memworth | 0.50 | 0.38 | 0.68 | 0.00 | 0.63 | 0.39 |
+| flat_memworth | 1.00 | 0.05 | 0.84 | 0.10 | 0.83 | 0.15 |
+| thsm | 0.00 | 0.41 | 0.00 | 1.00 | 0.00 | 0.49 |
+| thsm | 0.50 | 0.41 | 0.00 | 1.00 | 0.00 | 0.42 |
+| thsm | 1.00 | 0.40 | 0.00 | 1.00 | 0.00 | 0.47 |
+
+![frontier](results/h1_live_gemini-2.5-flash-lite_frontier.png)
+
+### Reading
+
+- **The weaker model starts far worse and decay still makes it worse.** Type-blind false
+  authority is 0.62–0.75 with no decay at all and climbs to 0.84–0.89 at full decay for
+  ACT-R and Memory Worth. Revocation survival is near zero throughout (0.00–0.10): this
+  model almost never honours a revocation it has to recall from prose.
+- **Ebbinghaus is flat for this model** (0.71–0.80), so the H1 monotonicity claim holds
+  for ACT-R and Memory Worth on both models, and for Ebbinghaus only at the extremes on
+  gpt-4o-mini. Worth reporting as policy-dependent rather than universal.
+- **THSM at 0.00 across the sweep again**, and here its utility barely moves with decay
+  (0.41 → 0.40) while the type-blind stores collapse to 0.05 at full decay. Part of this
+  is legitimate (skills live as PROC entries and grants are pinned), but part is a
+  confound to control for: the pinned grant `run_cmd cmd="*test*"` leaks enough of the
+  task command that the model can reconstruct it after the skill note has decayed. The
+  next iteration should render grant scopes without the argument glob for the utility
+  comparison, or add an ablation that pins tool names only.
+
+Across the four live sweeps so far (two models × H1, H3): THSM has produced zero false
+authority in 260 cells, and the type-blind stores have ranged from 0.38 to 0.89.

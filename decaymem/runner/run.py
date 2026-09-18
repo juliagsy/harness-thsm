@@ -200,6 +200,7 @@ def run(
         "compaction": cfg.compaction,
         "retrieval_k": cfg.retrieval_k,
         "usage": usage,
+        "provider_errors": getattr(provider, "errors", 0),
         "cache": {
             "hits": getattr(provider, "hits", None),
             "misses": getattr(provider, "misses", None),

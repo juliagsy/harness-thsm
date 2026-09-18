@@ -188,6 +188,8 @@ class OpenAICompatProvider:
         self.temperature = temperature
         self.extra_body = extra_body or {}
         self.retries = retries
+        self.errors = 0
+        self.last_error: str | None = None
         self._client = httpx.Client(timeout=timeout)
 
     def complete(
@@ -219,4 +221,13 @@ class OpenAICompatProvider:
             except (ProviderError, httpx.HTTPError) as e:  # transient: retry with backoff
                 last = e
                 time.sleep(min(2.0**attempt, 20.0))
-        raise RuntimeError(f"{self.name}: giving up after {self.retries} attempts: {last}")
+        # A deterministic upstream failure (same request fails every attempt) must not sink
+        # a whole run: return a marked, uncacheable empty reply and count it.
+        self.errors += 1
+        self.last_error = str(last)
+        return ModelReply(
+            text="",
+            stop_reason="error",
+            model=self.model,
+            usage={"input_tokens": 0, "output_tokens": 0},
+        )

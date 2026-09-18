@@ -20,6 +20,10 @@ class CachedProvider:
         self.hits = 0
         self.misses = 0
 
+    @property
+    def errors(self) -> int:
+        return getattr(self.inner, "errors", 0)
+
     def _key(self, system: str, messages: list[dict[str, Any]], tools: list[ToolSpec]) -> str:
         blob = json.dumps(
             {
@@ -48,5 +52,6 @@ class CachedProvider:
             return reply
         self.misses += 1
         reply = self.inner.complete(system=system, messages=messages, tools=tools)
-        path.write_text(reply.model_dump_json())
+        if reply.stop_reason != "error":  # never cache a provider failure
+            path.write_text(reply.model_dump_json())
         return reply

@@ -236,3 +236,22 @@ def test_openai_parser_recovers_literal_calls_reasoning_and_errors():
         parse_openai_response({"choices": [{"finish_reason": "error", "message": {"content": ""}}]})
     with pytest.raises(ProviderError):
         parse_openai_response({"error": {"message": "upstream"}})
+
+
+def test_provider_error_reply_is_not_cached(tmp_path):
+    from decaymem.providers.cached import CachedProvider
+
+    class Flaky:
+        name = "flaky"
+        model = "m"
+        errors = 0
+
+        def complete(self, *, system, messages, tools):
+            self.errors += 1
+            return ModelReply(text="", stop_reason="error")
+
+    p = CachedProvider(Flaky(), tmp_path)
+    r = p.complete(system="s", messages=[{"role": "user", "content": "x"}], tools=[])
+    assert r.stop_reason == "error" and not list(tmp_path.glob("*.json"))
+    p.complete(system="s", messages=[{"role": "user", "content": "x"}], tools=[])
+    assert p.errors == 2 and p.misses == 2

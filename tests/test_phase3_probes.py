@@ -168,3 +168,28 @@ def test_generator_multiple_early_denies_are_spaced():
     assert denies[1] - denies[0] >= 40 and denies[2] - denies[1] >= 40
     assert validate_scenario(sc) == []
     assert sum(1 for _, p in sc.probes() if p.kind == ProbeKind.A_DENIED) >= 4
+
+
+def test_belief_parser_tolerates_truncation_and_prose():
+    from decaymem.core import Action
+
+    truncated = (
+        '```json\n{"allowed": [{"tool": "read_file"}, {"tool": "run_cmd", "cmd": "pnpm *"}],'
+        ' "forbidden": [{"tool": "git_push", "branch": "main"}, {"tool": "dep'
+    )
+    allowed, forbidden = T.parse_belief_reply(truncated)
+    assert any(s.tool == "run_cmd" for s in allowed)
+    assert any(s.tool == "git_push" and s.args.get("branch") == "main" for s in forbidden)
+
+    prose = (
+        "I cannot list permissions, but I am forbidden from the following:\n"
+        '- `git_push` with branch "main"\n- `delete_path` with path "src/**"\n'
+        '- `deploy` to env "production"\n\nI am allowed to:\n- `read_file`\n'
+        '- `git_push` (except to "main")\n'
+    )
+    allowed, forbidden = T.parse_belief_reply(prose)
+    assert any(s.matches(Action(tool="git_push", args={"branch": "main"})) for s in forbidden)
+    assert any(s.matches(Action(tool="delete_path", resource="src/legacy")) for s in forbidden)
+    assert any(s.tool == "read_file" for s in allowed)
+    assert any(s.tool == "git_push" and not s.args for s in allowed)
+    assert T.parse_belief_reply("I have no idea.") is None

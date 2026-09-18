@@ -201,17 +201,92 @@ def belief_items_to_scopes(items) -> list:
     return out
 
 
-def parse_belief_reply(text: str) -> tuple[list, list] | None:
-    """Extract {"allowed": [...], "forbidden": [...]} from a reply; None if unparseable."""
+def _repair_truncated_json(fragment: str):
+    """Best effort for a JSON object cut off by the token limit: drop the incomplete
+    trailing item and close open brackets."""
     import json
 
+    frag = fragment.strip()
+    for cut in range(len(frag), 0, -1):
+        piece = frag[:cut].rstrip().rstrip(",")
+        opens = piece.count("[") - piece.count("]")
+        braces = piece.count("{") - piece.count("}")
+        if opens < 0 or braces < 0:
+            continue
+        try:
+            return json.loads(piece + "]" * opens + "}" * braces)
+        except json.JSONDecodeError:
+            continue
+    return None
+
+
+_PROSE_ITEM = re.compile(
+    r"`([\w.-]+)`(?:[^`\n]*?(?:\b(cmd|path|branch|env)\b)?[^`\n]*?\"([^\"\n]+)\")?"
+)
+_FORBID_WORDS = re.compile(
+    r"forbidden|not allowed|must not|never|prohibited|cannot|can't|revoked", re.I
+)
+_ALLOW_WORDS = re.compile(r"\ballowed\b|\bmay\b|\bcan\b|permitted", re.I)
+
+
+def _parse_belief_prose(text: str) -> tuple[list, list] | None:
+    """Fallback for models that answer in prose: bullet items under 'forbidden'/'allowed'
+    headings. A tool named with an 'except' clause is treated as allowed in general;
+    the exception itself normally appears in the forbidden list."""
+    from decaymem.core import Scope
+
+    allowed: list = []
+    forbidden: list = []
+    bucket = None
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        if "`" not in line:  # heading / sentence: decide the bucket
+            if _FORBID_WORDS.search(line):
+                bucket = forbidden
+            elif _ALLOW_WORDS.search(line):
+                bucket = allowed
+            continue
+        target = bucket
+        if target is None:  # inline sentence with a tool mention
+            target = forbidden if _FORBID_WORDS.search(line) else allowed
+        m = _PROSE_ITEM.search(line)
+        if not m:
+            continue
+        tool, key, val = m.group(1), m.group(2), m.group(3)
+        if "except" in line.lower() and target is allowed:
+            val = None  # "git_push (except to main)" -> allowed in general
+        args: dict[str, str] = {}
+        resource = None
+        if val is not None:
+            k = key or {"git_push": "branch", "deploy": "env", "run_cmd": "cmd"}.get(tool, "path")
+            if k == "path":
+                resource = val
+            else:
+                args[k] = val
+        target.append(Scope(tool=tool, args=args, resource=resource))
+    if not allowed and not forbidden:
+        return None
+    return allowed, forbidden
+
+
+def parse_belief_reply(text: str) -> tuple[list, list] | None:
+    """Extract {"allowed": [...], "forbidden": [...]} from a reply. Tolerates code fences,
+    JSON truncated by the token limit, and prose bullet lists; None if nothing usable."""
+    import json
+
+    obj = None
     m = re.search(r"\{.*\}", text, re.S)
-    if not m:
-        return None
-    try:
-        obj = json.loads(m.group(0))
-    except json.JSONDecodeError:
-        return None
-    if not isinstance(obj, dict):
-        return None
-    return belief_items_to_scopes(obj.get("allowed")), belief_items_to_scopes(obj.get("forbidden"))
+    if m:
+        try:
+            obj = json.loads(m.group(0))
+        except json.JSONDecodeError:
+            obj = None
+    if obj is None and "{" in text:
+        obj = _repair_truncated_json(text[text.index("{") :])
+    if isinstance(obj, dict) and ("allowed" in obj or "forbidden" in obj):
+        return belief_items_to_scopes(obj.get("allowed")), belief_items_to_scopes(
+            obj.get("forbidden")
+        )
+    return _parse_belief_prose(text)

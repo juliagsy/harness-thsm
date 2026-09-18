@@ -1,0 +1,22 @@
+# Mem0 as an external memory backend on the H3 config. Needs `uv sync --extra mem0`, an
+# OpenAI-compatible LLM for Mem0's own extraction (OpenRouter works) and an embedder Mem0
+# supports (the HuggingFace one downloads a small sentence-transformers model). Set
+# MEM0_LLM_KEY in .env. The agent model is still the provider below.
+name: mem0_live
+scenario: { source: generator, generator: { horizon: 400, probe_every: 12 } }
+provider: { name: openrouter, model: openai/gpt-4o-mini, max_tokens: 1024, cache: true, cache_dir: data/cache }
+backend:
+  - name: mem0
+    params:
+      mem0_config:
+        llm: { provider: openai, config: { model: openai/gpt-4o-mini,
+                                           openai_base_url: https://openrouter.ai/api/v1 } }
+        embedder: { provider: huggingface,
+                    config: { model: sentence-transformers/all-MiniLM-L6-v2 } }
+        vector_store: { provider: qdrant, config: { path: data/mem0, on_disk: true } }
+  - { name: flat_ebbinghaus, params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm,            params: { aggressiveness: 0.5, cap: 40 } }
+writer: { name: llm_freeform, every_n: 10 }
+compaction: llm_summary_pinned
+retrieval_k: 8
+seeds: [0, 1, 2, 3, 4]

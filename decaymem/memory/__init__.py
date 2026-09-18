@@ -28,7 +28,14 @@ def make_backend(cfg: dict, provider=None) -> MemoryBackend:
         return b
     if name in THSM_VARIANTS:
         return make_thsm_variant(name, provider, **params)
-    raise ValueError(f"unknown backend {name}; known: {sorted(FLAT_PRESETS | THSM_VARIANTS)}")
+    if name == "mem0":
+        from decaymem.adapters.mem0_backend import FakeMem0Client, Mem0Backend
+
+        client = FakeMem0Client() if params.pop("fake", False) else None
+        return Mem0Backend(provider=provider, client=client, **params)
+    raise ValueError(
+        f"unknown backend {name}; known: {sorted(FLAT_PRESETS | THSM_VARIANTS | {'mem0'})}"
+    )
 
 
 __all__ = [

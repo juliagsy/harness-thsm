@@ -119,8 +119,9 @@ policies; `decaymem.report` for the summary table and frontier plot. Config `swe
 expands backends × parameter grids. Phase 3 added `S-revoked` and `A-belief` probes with generator knobs
 (`early_deny`, `denied_weight`, `task_revoke_prob`, `belief_every`,
 `belief_after_compaction`) and runner overrides `--model/--name/--seeds/--jobs`. Phase 4 added the
-procurement domain (`envs/procurement.py`, `scenarios/domains/`). Not yet: third-party
-memory adapters.
+procurement domain (`envs/procurement.py`, `scenarios/domains/`) and a Mem0 adapter
+(`adapters/mem0_backend.py`, backend name `mem0`, `params.fake: true` for the offline
+stand-in). Letta adapter not yet written; a live Mem0 run needs an embedder provider.
 
 ## 7. Running existing systems through it
 

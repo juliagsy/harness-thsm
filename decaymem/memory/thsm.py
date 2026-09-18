@@ -54,6 +54,7 @@ class ThsmBackend(MemoryBackend):
         enforce_labels: bool = True,
         gate: bool = True,
         pin_deon: str = "all",
+        pin_detail: str = "full",  # full | tool_only (no argument globs: no skill leakage)
         deontic_from_events: bool = True,
         consolidation: str = "gated",
         cap: int = 60,
@@ -66,6 +67,7 @@ class ThsmBackend(MemoryBackend):
         self.enforce_labels = enforce_labels
         self.gate = gate
         self.pin_deon = pin_deon
+        self.pin_detail = pin_detail
         self.deontic_from_events = deontic_from_events and typed
         self.consolidation = consolidation
         self.cap = cap
@@ -85,6 +87,7 @@ class ThsmBackend(MemoryBackend):
             "enforce_labels": self.enforce_labels,
             "gate": self.gate,
             "pin_deon": self.pin_deon,
+            "pin_detail": self.pin_detail,
             "deontic_from_events": self.deontic_from_events,
             "consolidation": self.consolidation,
             "cap": self.cap,
@@ -283,7 +286,12 @@ class ThsmBackend(MemoryBackend):
             )
             for e in deon:
                 p = e.deon
-                what = T.scope_str(p.scope) if p.scope is not None else f"grant {p.target}"
+                if p.scope is None:
+                    what = f"grant {p.target}"
+                elif self.pin_detail == "tool_only":
+                    what = f"{p.scope.tool} (some arguments only)"
+                else:
+                    what = T.scope_str(p.scope)
                 if p.kind == DeonKind.DENY:
                     out.append(f"- FORBIDDEN: {what}")
                 elif p.kind == DeonKind.GRANT:
@@ -314,6 +322,7 @@ def make_thsm_variant(name: str, provider=None, **params) -> ThsmBackend:
         "thsm": {},
         "thsm_nopin": {"pin_deon": "none"},
         "thsm_nogate": {"gate": False},
+        "thsm_pintool": {"pin_detail": "tool_only"},
         "typed_nolabels": {"enforce_labels": False},
         "labels_notypes": {"typed": False, "gate": False, "deontic_from_events": False},
     }

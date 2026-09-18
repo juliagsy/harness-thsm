@@ -154,3 +154,12 @@ def test_flat_backends_use_policy_and_evict():
         b.feedback(["n"], False)  # the prohibition keeps "causing" failures
     b.decay(1)
     assert "n" not in b.store  # evicted outright: the type-blind failure mode
+
+
+def test_pintool_hides_argument_globs():
+    b = build("thsm_pintool")
+    rendered = b.render(b.retrieve("x", 5, 8))
+    assert "ALLOWED: run_cmd (some arguments only)" in rendered
+    assert 'cmd="pnpm *"' not in rendered
+    assert b.authorize(PNPM, 5).allowed  # the gate still knows the full scope
+    assert b.describe()["pin_detail"] == "tool_only"

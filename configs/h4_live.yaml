@@ -1,0 +1,19 @@
+# H4: prohibition compliance vs depth since the DENY. Three early denies spaced 40 ticks
+# apart, A-denied probes weighted 6x, probes every 6 events. gpt-4o-mini via OpenRouter
+# (~$0.35 for 25 cells); rerun with --model for other families.
+name: h4_live
+scenario:
+  source: generator
+  generator: { horizon: 500, probe_every: 6, early_deny: true, n_early_denies: 3,
+               early_deny_spacing: 40, denied_weight: 6, deontic_event_prob: 0.06 }
+provider: { name: openrouter, model: openai/gpt-4o-mini, max_tokens: 1024, cache: true, cache_dir: data/cache }
+backend:
+  - { name: flat_ebbinghaus, params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: flat_actr,       params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: flat_memworth,   params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm_nogate,     params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm,            params: { aggressiveness: 0.5, cap: 40 } }
+writer: { name: llm_freeform, every_n: 10 }
+compaction: llm_summary
+retrieval_k: 8
+seeds: [0, 1, 2, 3, 4]

@@ -146,3 +146,25 @@ def test_generator_phase3_knobs_validate():
         e.kind.value == "permission_deny" and e.payload["deny_id"].endswith("_early")
         for e in sc.events
     )
+
+
+def test_generator_multiple_early_denies_are_spaced():
+    sc = generate(
+        GeneratorConfig(
+            horizon=300,
+            seed=1,
+            early_deny=True,
+            n_early_denies=3,
+            early_deny_spacing=40,
+            denied_weight=6,
+        )
+    )
+    denies = [
+        e.t
+        for e in sc.events
+        if e.kind.value == "permission_deny" and e.payload["deny_id"].endswith("_early")
+    ]
+    assert len(denies) == 3
+    assert denies[1] - denies[0] >= 40 and denies[2] - denies[1] >= 40
+    assert validate_scenario(sc) == []
+    assert sum(1 for _, p in sc.probes() if p.kind == ProbeKind.A_DENIED) >= 4

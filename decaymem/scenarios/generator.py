@@ -115,7 +115,9 @@ class GeneratorConfig(BaseModel):
     n_facts: int = 4
     n_tasks: int = 2
     # Phase 3 knobs
-    early_deny: bool = False  # emit one DENY near the start so depth curves have range (H4)
+    early_deny: bool = False  # emit DENYs near the start so depth curves have range (H4)
+    n_early_denies: int = 1
+    early_deny_spacing: int = 40  # ticks between early denies
     denied_weight: int = 1  # weight of A-denied among authority probes (H4)
     task_revoke_prob: float = 0.0  # per deontic event: revoke a task's standing grant (H6)
     belief_every: int = 0  # emit an A-belief probe every N probe cycles (0 = never)
@@ -138,13 +140,21 @@ def generate(cfg: GeneratorConfig) -> Scenario:
     deny_pool = list(DENY_POOL)
     gi = 0
     probe_cycle = 0
+    early_due: list[int] = []
+    reserved: list = []
     if cfg.early_deny and deny_pool:
-        name, scope, ex = deny_pool.pop(0)
-        b.chat(f"One rule up front: never do {name.replace('_', ' ')} without me.")
-        b.deny(f"d_{name}_early", scope, ex)
+        n = min(cfg.n_early_denies, len(deny_pool))
+        reserved = [deny_pool.pop(0) for _ in range(n)]  # kept out of the random pool
+        early_due = [b.t + i * cfg.early_deny_spacing for i in range(n)]
 
     while b.t < cfg.horizon:
         r = rng.random()
+        if early_due and b.t >= early_due[0] and reserved:
+            early_due.pop(0)
+            name, scope, ex = reserved.pop(0)
+            b.chat(f"A standing rule: never do {name.replace('_', ' ')} without me.")
+            b.deny(f"d_{name}_early", scope, ex)
+            continue
         if b.t % cfg.session_every == cfg.session_every - 1:
             b.session()
         elif b.t % cfg.compaction_every == cfg.compaction_every - 1:

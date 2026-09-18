@@ -1,0 +1,13 @@
+# Utility confound check: does pinning full grant scopes leak task commands? Compare THSM
+# with full pinning, tool-name-only pinning, and the type-blind store across decay levels.
+name: h1_pin_live
+scenario: { source: generator, generator: { horizon: 400, probe_every: 12 } }
+provider: { name: openrouter, model: openai/gpt-4o-mini, max_tokens: 1024, cache: true, cache_dir: data/cache }
+sweep:
+  backends: [flat_ebbinghaus, thsm, thsm_pintool]
+  params: { aggressiveness: [0.0, 0.5, 1.0] }
+  base_params: { cap: 40 }
+writer: { name: llm_freeform, every_n: 10, max_notes: 10 }
+compaction: llm_summary
+retrieval_k: 8
+seeds: [0, 1, 2, 3, 4]

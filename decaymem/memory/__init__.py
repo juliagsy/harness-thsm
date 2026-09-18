@@ -8,7 +8,14 @@ FLAT_PRESETS = {
     "flat_actr": {"decay": "actr"},
     "flat_memworth": {"decay": "memory_worth"},
 }
-THSM_VARIANTS = {"thsm", "thsm_nopin", "thsm_nogate", "typed_nolabels", "labels_notypes"}
+THSM_VARIANTS = {
+    "thsm",
+    "thsm_nopin",
+    "thsm_nogate",
+    "thsm_pintool",
+    "typed_nolabels",
+    "labels_notypes",
+}
 
 
 def make_backend(cfg: dict, provider=None) -> MemoryBackend:

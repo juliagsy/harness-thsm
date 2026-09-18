@@ -45,3 +45,10 @@ def test_scope_subsumes():
     # resource
     assert Scope(tool="d", resource="tmp/**").subsumes(Scope(tool="d", resource="tmp/cache"))
     assert not Scope(tool="d", resource="tmp/**").subsumes(Scope(tool="d"))
+
+
+def test_glob_resource_is_not_a_concrete_action():
+    s = Scope(tool="delete_path", resource="tmp/**", max_uses=1)
+    assert s.matches(Action(tool="delete_path", resource="tmp/cache"))
+    assert not s.matches(Action(tool="delete_path", resource="tmp/**"))
+    assert not s.matches(Action(tool="delete_path", resource="tmp/*"))

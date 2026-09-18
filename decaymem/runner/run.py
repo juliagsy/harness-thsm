@@ -210,7 +210,8 @@ def run(
         "config": cfg.model_dump(),
     }
     aggr = backend.describe().get("aggressiveness", 0.0)
-    run_id = f"{scenario.name}__{backend.name}__a{aggr:.2f}__{manifest['model']}__s{seed}"
+    model_tag = str(manifest["model"]).replace("/", "-").replace(":", "-")
+    run_id = f"{scenario.name}__{backend.name}__a{aggr:.2f}__{model_tag}__s{seed}"
     result = RunResult(name=run_id, scorecard=sc, manifest=manifest, records=grader.records)
     if write:
         out = Path(cfg.out_dir) / cfg.name / "results" / run_id

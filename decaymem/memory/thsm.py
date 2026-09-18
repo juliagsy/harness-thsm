@@ -277,6 +277,10 @@ class ThsmBackend(MemoryBackend):
         out: list[str] = []
         if deon:
             out.append(T.PINNED_HEADER)
+            out.append(
+                "(quoted values are glob patterns over tool arguments; call tools with "
+                "concrete paths and commands)"
+            )
             for e in deon:
                 p = e.deon
                 what = T.scope_str(p.scope) if p.scope is not None else f"grant {p.target}"

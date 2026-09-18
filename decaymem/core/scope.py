@@ -34,6 +34,8 @@ class Scope(BaseModel, frozen=True):
     def matches(self, action: Action) -> bool:
         if self.tool != "*" and self.tool != action.tool:
             return False
+        if action.resource is not None and not _is_literal(action.resource):
+            return False  # a glob is not a concrete resource
         for key, pattern in self.args.items():
             if key not in action.args or not fnmatchcase(action.args[key], pattern):
                 return False

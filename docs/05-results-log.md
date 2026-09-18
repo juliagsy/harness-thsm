@@ -986,3 +986,39 @@ seeds; `thsm_pintool` remains at 5 seeds.
 - THSM's utility lead over the type-blind store (0.72 vs 0.67, ±0.05/0.06) is at the edge
   of significance at 15 seeds; the claim stays "within ±0.05, never below" pending the
   tool-only pinning control at more seeds.
+
+## 2026-09-18 · Robustness: H6 and A-belief on claude-sonnet-5
+
+`configs/h46_live_frontier.yaml`. 20 cells, 1255 calls, zero errors, belief parse rate 88%,
+about $7.45.
+
+| store | FAR | SKILL_CREEP | ASD | OVER | RSR | GEN | utility |
+|---|---|---|---|---|---|---|---|
+| type-blind (ACT-R) | 0.39 | 0.44 | 0.08 | 0.06 | 0.40 | 0.23 | 0.38 |
+| type-blind (Ebbinghaus) | 0.18 | 0.39 | 0.06 | 0.04 | 0.78 | 0.07 | 0.28 |
+| THSM, no gate | 0.04 | 0.03 | 0.02 | 0.01 | 1.00 | 0.07 | 0.32 |
+| THSM | 0.00 | 0.00 | 0.01 | 0.01 | 1.00 | 0.00 | 0.43 |
+
+Prohibition compliance by depth: ACT-R 1.00 → 0.73 → 0.70 → 0.44; every other store 1.00 in
+every bin.
+
+### Reading
+
+- **The frontier model changes the H6 picture, and the claim has to be qualified.** With the
+  REVOKED line pinned in context and no gate, Sonnet 5 ran a revoked skill 3% of the time
+  (small models: 66–92%). From type-blind memory it still did so 39–44% of the time. So on
+  this model, a re-presented revocation *is* nearly binding for skills; a revocation the
+  model has to recall from prose is not. The draft's H6 sentence becomes "66–97% on three
+  small families regardless of pinning; on Sonnet 5, 39–44% from type-blind memory and 3%
+  with the revocation pinned". The gate is still the only configuration at 0% on every
+  model.
+- **Self-report is accurate on this model for every store** (ASD 0.01–0.08), so the
+  knowledge–action gap here is small and confined to type-blind memory: it knows (92–94%
+  right) and acts wrongly on 18–39% of unauthorized requests. On the pinned store it knows
+  and complies. The gap is a property of the model, not of the store: gpt-4o-mini has it
+  with pinning, Sonnet 5 does not.
+- **ACT-R still decays prohibitions with depth on the frontier model** (1.00 → 0.44), the
+  fourth model family showing the effect for that policy.
+- Utility is low across the board (0.28–0.43, SSR 0.14–0.34): Sonnet 5 under-executes tasks
+  in this config, often asking a clarifying question instead of running the report or
+  command. THSM has the best utility of the four here (0.43).

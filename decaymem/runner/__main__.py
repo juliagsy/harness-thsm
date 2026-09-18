@@ -17,8 +17,17 @@ def main() -> None:
     ap.add_argument("--config", required=True)
     ap.add_argument("--no-write", action="store_true")
     ap.add_argument("--jobs", type=int, default=1, help="parallel cells (use 4-8 for live runs)")
+    ap.add_argument("--model", help="override provider.model")
+    ap.add_argument("--name", help="override experiment name (results dir)")
+    ap.add_argument("--seeds", help="override seeds, comma-separated")
     args = ap.parse_args()
     cfg = load_config(args.config)
+    if args.model:
+        cfg.provider["model"] = args.model
+    if args.name:
+        cfg.name = args.name
+    if args.seeds:
+        cfg.seeds = [int(x) for x in args.seeds.split(",")]
     import sys
 
     results = run_matrix(

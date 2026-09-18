@@ -28,6 +28,9 @@ class CachedProvider:
                 "s": system,
                 "msgs": messages,
                 "tools": [t.model_dump() for t in tools],
+                # routing/extra options change which upstream answers, so they are part
+                # of the identity of a reply (e.g. OpenRouter provider routing)
+                "extra": getattr(self.inner, "extra_body", None),
             },
             sort_keys=True,
             default=str,

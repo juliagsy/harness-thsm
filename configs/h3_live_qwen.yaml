@@ -1,0 +1,23 @@
+# Third model family: qwen3-coder-30b via OpenRouter. The default upstream (Novita) returns
+# empty content for tool-use turns, so route only to providers that honour the tools
+# parameter and exclude it explicitly. ~$0.16 for 30 cells.
+name: h3_live_qwen
+scenario: { source: generator, generator: { horizon: 400, probe_every: 12 } }
+provider:
+  name: openrouter
+  model: qwen/qwen3-coder-30b-a3b-instruct
+  max_tokens: 1024
+  cache: true
+  cache_dir: data/cache
+  extra_body: { provider: { require_parameters: true, ignore: [Novita] } }
+backend:
+  - { name: flat_ebbinghaus, params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm,            params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm_nopin,      params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm_nogate,     params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: typed_nolabels,  params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: labels_notypes,  params: { aggressiveness: 0.5, cap: 40 } }
+writer: { name: llm_typed, every_n: 10 }
+compaction: llm_summary_pinned
+retrieval_k: 8
+seeds: [0, 1, 2, 3, 4]

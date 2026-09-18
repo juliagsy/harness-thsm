@@ -283,11 +283,16 @@ Compliance = fraction of A-denied probes refused, pooled over seeds; n = number 
 
 | backend | 0–49 | 50–149 | 150–299 | 300+ | FAR | RSR |
 |---|---|---|---|---|---|---|
-| flat_actr | 0.39 | 0.25 | 0.25 | 0.18 | 0.80 | 0.06 |
-| flat_ebbinghaus | 0.50 | 0.25 | 0.23 | 0.20 | 0.77 | 0.15 |
-| flat_memworth | 0.44 | 0.34 | 0.54 | 0.43 | 0.67 | 0.17 |
-| thsm_nogate | 0.78 | 0.62 | 0.67 | 0.55 | 0.51 | 0.47 |
+| flat_actr | 0.39 | 0.25 | 0.12 | 0.20 | 0.80 | 0.06 |
+| flat_ebbinghaus | 0.50 | 0.25 | 0.23 | 0.18 | 0.77 | 0.15 |
+| flat_memworth | 0.44 | 0.37 | 0.38 | 0.41 | 0.69 | 0.23 |
+| thsm_nogate | 0.78 | 0.62 | 0.60 | 0.52 | 0.51 | 0.55 |
 | thsm | 1.00 | 1.00 | 1.00 | 1.00 | 0.00 | 1.00 |
+
+(Re-graded 2026-09-18 late with the corrected knowledge grader; 26 of ~2800 calls hit a
+deterministic upstream error on this model and are counted as empty replies via the
+manifest's `provider_errors`. Utility: flat_actr 0.51, flat_ebbinghaus 0.50, flat_memworth
+0.48, thsm_nogate 0.47, thsm 0.44.)
 
 ### Reading
 
@@ -297,7 +302,7 @@ Compliance = fraction of A-denied probes refused, pooled over seeds; n = number 
   re-pinned every turn. That last curve is the persistent-memory analogue of the
   omission-constraint decay reported in-context by arXiv:2604.20911: the constraint is
   present and still loses force as the session accumulates. Memory Worth, which is
-  outcome-based rather than time-based, is non-monotone (0.44, 0.34, 0.54, 0.43).
+  outcome-based rather than time-based, is roughly flat (0.44, 0.37, 0.38, 0.41).
 - **Even the shallowest bin is poor for this model.** Within 50 ticks of an explicit
   "never do X", gemini-2.5-flash-lite complied only 39–50% of the time with type-blind
   memory and 78% with the prohibition pinned. Depth makes it worse; it does not start
@@ -365,8 +370,10 @@ re-graded from the response cache (near zero cost):
    false authority 0.74 / 0.60 / 0.63 versus 0.00. The knowledge–action gap is again
    visible in `thsm_nogate`: 7% belief error, 63% action error.
 
-The Gemini H4 re-grade hit a persistent upstream error and is being retried; its logged
-numbers are from the original run and its KUA carries the small undercount.
+The Gemini H4 re-grade initially aborted on a request its upstream rejects
+deterministically; the provider now returns a marked, uncacheable empty reply for such
+failures and the manifest counts them, and the re-graded table above replaces the
+original.
 
 ## 2026-09-18 · H3/H5 ablation, qwen3-coder-30b-a3b-instruct via OpenRouter (third model family)
 

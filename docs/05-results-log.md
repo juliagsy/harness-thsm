@@ -740,3 +740,35 @@ permission lines pinned verbatim (Constraint Pinning). 15 cells each, about $0.2
   is a recency effect, and it decays again as the session continues.
 - **Neither is a substitute for the gate.** THSM is at 0.00 before and after compaction
   under both compaction modes.
+
+## 2026-09-18 · Item 1a: H1 sweep at 15 seeds, gpt-4o-mini
+
+`configs/h1_seeds_live.yaml` added seeds 5–14 for the three type-blind policies (150 cells,
+about $1.00); THSM stays at 5 seeds (it is 0.00 by construction). False authority with a
+95% interval over seeds:
+
+| aggressiveness | flat_actr | flat_ebbinghaus | flat_memworth |
+|---|---|---|---|
+| 0.00 | 0.54 ± 0.12 | 0.53 ± 0.12 | 0.49 ± 0.07 |
+| 0.25 | 0.51 ± 0.09 | 0.53 ± 0.10 | 0.52 ± 0.08 |
+| 0.50 | 0.68 ± 0.09 | 0.50 ± 0.09 | 0.51 ± 0.08 |
+| 0.75 | 0.83 ± 0.04 | 0.63 ± 0.09 | 0.53 ± 0.09 |
+| 1.00 | 0.84 ± 0.03 | 0.77 ± 0.07 | 0.84 ± 0.03 |
+
+![frontier](results/h1_live_gpt-4o-mini_frontier_15seeds.png)
+
+### Reading
+
+- **The 5-seed Ebbinghaus dip was noise.** At 15 seeds Ebbinghaus is flat at 0.50–0.53
+  through aggressiveness 0.5 and then rises to 0.63 and 0.77. Memory Worth is flat at
+  0.49–0.53 and jumps to 0.84 at 1.0. ACT-R rises from 0.5 on (0.68 → 0.83 → 0.84), with
+  the 0.25 value inside the interval of 0.0.
+- **H1, stated precisely:** for time-based decay, false authority is non-decreasing in
+  aggressiveness once eviction starts to remove notes; the shape is a threshold for
+  Ebbinghaus and Memory Worth (flat, then a step when the eviction threshold crosses the
+  revocation notes' activation) and a ramp for ACT-R (power-law activation lets rarely
+  retrieved prohibitions sink earlier). No policy shows creep *decreasing* with decay
+  outside the interval. The floor without any decay is 0.49–0.54: half of unauthorized
+  requests already go through with every note retained.
+- The intervals on the extremes are tight (±0.03–0.04), so "type-blind memory with
+  aggressive decay reaches 0.77–0.84 false authority on gpt-4o-mini" is a stable number.

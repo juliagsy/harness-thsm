@@ -16,6 +16,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(prog="decaymem.runner")
     ap.add_argument("--config", required=True)
     ap.add_argument("--no-write", action="store_true")
+    ap.add_argument("--jobs", type=int, default=1, help="parallel cells (use 4-8 for live runs)")
     args = ap.parse_args()
     cfg = load_config(args.config)
     import sys
@@ -23,6 +24,7 @@ def main() -> None:
     results = run_matrix(
         cfg,
         write=not args.no_write,
+        jobs=args.jobs,
         progress=lambda i, n, r: print(f"[{i}/{n}] {r.name}", file=sys.stderr),
     )
     ukeys = ["KUA", "STALE", "SSR", "REGRESS"]

@@ -250,11 +250,33 @@ def _compact(mode: str, context: list[str], complete) -> list[str]:
     raise ValueError(mode)
 
 
-def run_matrix(cfg: RunConfig, write: bool = True, progress=None) -> list[RunResult]:
-    results = []
+def run_matrix(cfg: RunConfig, write: bool = True, progress=None, jobs: int = 1) -> list[RunResult]:
+    """Run every (backend, seed) cell. Live runs are latency-bound, so `jobs` > 1 runs
+    cells on threads; each cell has its own env/backend/grader and the response cache is
+    content-addressed, so cells never share mutable state."""
     todo = [(b, s) for b in cfg.backends() for s in cfg.seeds]
-    for i, (backend_cfg, seed) in enumerate(todo):
-        results.append(run(deepcopy(cfg), backend_cfg=backend_cfg, seed=seed, write=write))
-        if progress:
-            progress(i + 1, len(todo), results[-1])
-    return results
+    results: list[RunResult | None] = [None] * len(todo)
+    done = 0
+
+    def _one(i: int) -> RunResult:
+        backend_cfg, seed = todo[i]
+        return run(deepcopy(cfg), backend_cfg=backend_cfg, seed=seed, write=write)
+
+    if jobs <= 1:
+        for i in range(len(todo)):
+            results[i] = _one(i)
+            done += 1
+            if progress:
+                progress(done, len(todo), results[i])
+    else:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        with ThreadPoolExecutor(max_workers=jobs) as pool:
+            futs = {pool.submit(_one, i): i for i in range(len(todo))}
+            for fut in as_completed(futs):
+                i = futs[fut]
+                results[i] = fut.result()
+                done += 1
+                if progress:
+                    progress(done, len(todo), results[i])
+    return [r for r in results if r is not None]

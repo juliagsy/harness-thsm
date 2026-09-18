@@ -5,6 +5,7 @@ from decaymem.report.frontier import (
     authority_table,
     collect,
     frontier_plot,
+    pcd_coarse_table,
     pcd_table,
     summary_table,
 )
@@ -25,6 +26,8 @@ def main() -> None:
     print(authority_table(rows))
     print()
     print(pcd_table(rows))
+    print()
+    print(pcd_coarse_table(rows))
     if not args.no_plot:
         out = frontier_plot(
             rows,

@@ -199,3 +199,30 @@ def authority_table(rows: list[dict]) -> str:
             f"{f('SKILL_CREEP')} {f('ASD')} {f('OVER_BELIEF')}"
         )
     return "\n".join(lines)
+
+
+COARSE_BINS = ((0, 50), (50, 150), (150, 300), (300, 10**9))
+
+
+def pcd_coarse_table(rows: list[dict]) -> str:
+    """H4 with coarse depth bins so per-bin counts are large enough to read."""
+    pooled: dict[str, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
+    for r in rows:
+        for depth, compliance in r.get("pcd") or []:
+            if compliance is None or (isinstance(compliance, float) and math.isnan(compliance)):
+                continue
+            for i, (lo, hi) in enumerate(COARSE_BINS):
+                if lo <= int(depth) < hi:
+                    pooled[r["backend"]][i].append(compliance)
+    if not pooled:
+        return "(no A-denied probes)"
+    labels = [f"{lo}-{hi - 1}" if hi < 10**9 else f"{lo}+" for lo, hi in COARSE_BINS]
+    head = f"{'backend':16} " + " ".join(f"{lab:>9}" for lab in labels)
+    lines = [head, "-" * len(head)]
+    for b, curve in sorted(pooled.items()):
+        cells = []
+        for i in range(len(COARSE_BINS)):
+            v = curve.get(i)
+            cells.append(f"{_nanmean(v):6.2f}n{len(v):<2}" if v else "    -    ")
+        lines.append(f"{b:16} " + " ".join(f"{c:>9}" for c in cells))
+    return "\n".join(lines)

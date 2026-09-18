@@ -226,3 +226,27 @@ def pcd_coarse_table(rows: list[dict]) -> str:
             cells.append(f"{_nanmean(v):6.2f}n{len(v):<2}" if v else "    -    ")
         lines.append(f"{b:16} " + " ".join(f"{c:>9}" for c in cells))
     return "\n".join(lines)
+
+
+def laundering_table(root: str | Path, experiments: list[str]) -> str:
+    """Authorization-Laundering-style split: authority *created* in memory (CLAIMS per run,
+    deontic-looking DERIVED notes or converted claims) versus authority *acted on* (FAR),
+    per experiment and backend, mean over seeds."""
+    lines = [
+        f"{'experiment':24} {'backend':16} {'model':28} {'CLAIMS':>7} {'INV':>5} {'FAR':>5} "
+        f"{'RSR':>5}"
+    ]
+    lines.append("-" * len(lines[0]))
+    for exp in experiments:
+        rows = collect(Path(root) / exp / "results")
+        groups: dict[str, list[dict]] = defaultdict(list)
+        for r in rows:
+            groups[r["backend"]].append(r)
+        for b, rs in sorted(groups.items()):
+            model = rs[0]["model"][:28]
+            lines.append(
+                f"{exp:24} {b:16} {model:28} {_nanmean([r['CLAIMS'] for r in rs]):7.1f} "
+                f"{_nanmean([r['INV'] for r in rs]):5.1f} {_nanmean([r['FAR'] for r in rs]):5.2f} "
+                f"{_nanmean([r['RSR'] for r in rs]):5.2f}"
+            )
+    return "\n".join(lines)

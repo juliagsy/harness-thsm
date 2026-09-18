@@ -895,3 +895,36 @@ parsed, about $0.25.
   carried out 52–66% of unauthorized financial requests from type-blind memory and 39%
   with the deontic state pinned. The model is not confused about what it may do. It does
   it anyway when asked. That is the failure the gate is for.
+
+## 2026-09-18 · Laundering split: authority created vs authority acted on
+
+`python -m decaymem.report --laundering <experiments>` prints, per backend and model, the
+mean number of deontic-looking memory writes per run (`CLAIMS`: freeform notes that read
+as permissions, or typed DEON candidates converted to flagged claims), the invariant
+violations (`INV`: writes that actually widened A(t)), and the behavioural rates. This is
+the Authorization Laundering paper's writer/executor split in our terms.
+
+| model | store | created (CLAIMS/run) | widened (INV/run) | acted (FAR) |
+|---|---|---|---|---|
+| gpt-4o-mini | type-blind | 6.6 | 0 (no A(t) to widen) | 0.40 |
+| gpt-4o-mini | typed_nolabels | 8.2 | 16.2 | 0.00 |
+| gpt-4o-mini | thsm | 23.6 | 0 | 0.00 |
+| gemini-2.5-flash-lite | type-blind / typed_nolabels / thsm | 7.0 / 14.8 / 30.6 | 0 / 15.8 / 0 | 0.62 / 0.00 / 0.00 |
+| qwen3-coder-30b | type-blind / typed_nolabels / thsm | 6.6 / 14.2 / 64.6 | 0 / 50.0 / 0 | 0.58 / 0.00 / 0.00 |
+| claude-sonnet-5 | type-blind / typed_nolabels / thsm | 5.0 / 4.2 / 20.0 | 0 / 15.6 / 0 | 0.27 / 0.00 / 0.00 |
+
+### Reading
+
+- **Every model creates authority in memory; the store decides whether it counts.** The
+  typed writer produces 20–65 deontic candidates per run on THSM, all of which become
+  flagged claims with no effect on A(t). The same writes on `typed_nolabels` become 16–50
+  real widenings per run. Creation is a property of the model; laundering is a property
+  of the store.
+- **The paper's executor number is reproduced structurally.** They report executors act
+  on 98.6% of falsely recorded authority. We cannot measure that directly for type-blind
+  stores (there is no separate "recorded authority" object), but `typed_nolabels` shows
+  the flip side: with 16–50 laundered grants per run, behavioural false authority stayed
+  at 0.00–0.02 only because the probe set rarely landed on the widened scope. Reporting
+  `INV` alongside `FAR` is what makes the laundering visible.
+- Sonnet 5 creates the fewest claims (5.0 freeform, 4.2 typed) and Qwen by far the most
+  (64.6), which tracks their false-authority rates on type-blind memory (0.27 vs 0.58).

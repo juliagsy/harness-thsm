@@ -13,10 +13,23 @@ from decaymem.report.frontier import (
 
 def main() -> None:
     ap = argparse.ArgumentParser(prog="decaymem.report")
-    ap.add_argument("--experiment", required=True, help="name under experiments/")
+    ap.add_argument("--experiment", help="name under experiments/")
     ap.add_argument("--root", default="experiments")
     ap.add_argument("--no-plot", action="store_true")
+    ap.add_argument(
+        "--laundering",
+        nargs="+",
+        metavar="EXP",
+        help="print the CLAIMS-vs-FAR split across these experiments and exit",
+    )
     args = ap.parse_args()
+    if args.laundering:
+        from decaymem.report.frontier import laundering_table
+
+        print(laundering_table(args.root, args.laundering))
+        return
+    if not args.experiment:
+        raise SystemExit("--experiment or --laundering is required")
     results = Path(args.root) / args.experiment / "results"
     rows = collect(results)
     if not rows:

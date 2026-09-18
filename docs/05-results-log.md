@@ -59,3 +59,54 @@ Prohibition compliance by depth since the DENY (pooled, H4 preview):
 
 Caveats: one small model, one domain, 5 seeds, 400 events. A-belief probes and the
 procurement domain are not yet implemented.
+
+## 2026-09-18 · H1 decay sweep, gpt-4o-mini via OpenRouter
+
+Config `configs/h1_live.yaml`: generator scenarios, 400 events, 5 seeds, freeform writer,
+LLM-summary compaction, cap 40; four backends × five aggressiveness levels. 100 cells,
+5711 model calls (5271 from cache), about $0.66.
+
+| backend | aggr | utility | FAR | RSR | GEN | KUA | SSR | STALE |
+|---|---|---|---|---|---|---|---|---|
+| flat_actr | 0.00 | 0.64 | 0.50 | 0.40 | 0.46 | 0.51 | 0.73 | 0.44 |
+| flat_actr | 0.50 | 0.60 | 0.65 | 0.17 | 0.63 | 0.42 | 0.69 | 0.52 |
+| flat_actr | 1.00 | 0.14 | 0.83 | 0.13 | 0.71 | 0.03 | 0.27 | 0.08 |
+| flat_ebbinghaus | 0.00 | 0.57 | 0.49 | 0.60 | 0.51 | 0.32 | 0.69 | 0.68 |
+| flat_ebbinghaus | 0.50 | 0.55 | 0.38 | 0.57 | 0.38 | 0.37 | 0.68 | 0.63 |
+| flat_ebbinghaus | 1.00 | 0.40 | 0.75 | 0.27 | 0.74 | 0.29 | 0.49 | 0.39 |
+| flat_memworth | 0.00 | 0.65 | 0.50 | 0.30 | 0.44 | 0.45 | 0.78 | 0.49 |
+| flat_memworth | 0.50 | 0.68 | 0.54 | 0.37 | 0.59 | 0.53 | 0.76 | 0.38 |
+| flat_memworth | 1.00 | 0.14 | 0.83 | 0.13 | 0.71 | 0.03 | 0.27 | 0.08 |
+| thsm | 0.00 | 0.62 | 0.00 | 1.00 | 0.00 | 0.40 | 0.76 | 0.54 |
+| thsm | 0.50 | 0.61 | 0.00 | 1.00 | 0.00 | 0.35 | 0.78 | 0.62 |
+| thsm | 1.00 | 0.38 | 0.00 | 1.00 | 0.00 | 0.26 | 0.47 | 0.39 |
+
+(Intermediate levels are in `experiments/h1_live/`; run `decaymem.report` for all rows.)
+
+![frontier](results/h1_live_gpt-4o-mini_frontier.png)
+
+### Reading
+
+- **H1 holds for ACT-R and at the extremes for all three type-blind policies.** ACT-R
+  false authority climbs monotonically with aggressiveness, 0.50 → 0.53 → 0.65 → 0.80
+  → 0.83, and revocation survival falls 0.40 → 0.13. Ebbinghaus and Memory Worth are flat
+  or slightly non-monotone through the middle and then jump to 0.75 and 0.83 at full
+  aggressiveness. The mechanism at the top end is the one predicted: once revocation and
+  prohibition notes are gone the model has no reason not to comply, so scope-adjacent
+  generalization (GEN 0.71–0.76) and revoked actions (RSR 0.13–0.27) both surge.
+- **Even with no decay at all, type-blind memory sits at FAR ≈ 0.50.** Half of the
+  unauthorized requests were carried out with every note still in the store. Decay makes
+  it worse; it is not the root cause. The root cause is that authority lives in
+  retrievable prose the model may or may not weigh.
+- **THSM is flat at 1.00 across the whole sweep, and its utility curve tracks the
+  baselines' curve, including the collapse at aggressiveness 1.0** (0.62 → 0.38, versus
+  0.57 → 0.40 for Ebbinghaus). That is the decoupling the model was built for: knowledge
+  and skills decay exactly as much as in the baseline, deontic state not at all.
+- **Utility is not monotone in aggressiveness for the baselines** either; moderate decay
+  sometimes helps (ACT-R 0.25, Memory Worth 0.50) by pruning stale notes, which is the
+  motivation for decay in the first place. The frontier plot shows the trade: the
+  type-blind curves drift down and left as decay tightens, THSM moves only left.
+
+Caveats as above: one small model, one domain, 5 seeds. The Ebbinghaus mid-range dip
+(FAR 0.38 at 0.50) is within seed noise and needs more seeds before reading anything
+into it.

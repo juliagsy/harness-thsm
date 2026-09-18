@@ -17,16 +17,14 @@ authority gets fabricated or widened. This project builds:
    (API or local) and any memory backend, including third-party ones, with cached,
    reproducible results.
 
-Status: Phase 2 (THSM) complete. `decaymem/core/` holds the typed state model and the
-I1–I6 invariant checker. The plugin layer has type-blind baselines (`flat_vector`,
-`flat_ebbinghaus`, `flat_actr`, `flat_memworth`), the THSM backend and its ablations
-(`thsm`, `thsm_nopin`, `thsm_nogate`, `typed_nolabels`, `labels_notypes`), four decay
-policies behind one `aggressiveness` knob, freeform and typed writers, pinned compaction,
-and providers for Anthropic, any OpenAI-compatible endpoint (OpenRouter, OpenAI, Ollama,
-vLLM presets) plus a zero-cost scripted agent. The H1 sweep (100 runs) and H3/H5 ablation
-(30 runs) execute end to end and render the frontier plot, so far only with the scripted
-agent: no live model has been run yet for lack of credentials in the dev environment.
-Phase 3 (full matrix with real models) is next. Read the docs in order.
+Status: Phases 0–2 complete and the first live experiments are in (see
+[docs/05-results-log.md](docs/05-results-log.md)). On gpt-4o-mini via OpenRouter, the
+H3/H5 ablation and the H1 decay sweep both ran end to end for under a dollar. THSM holds
+authority fidelity at 1.00 at every decay level while type-blind stores creep from about
+0.50 false authority with no decay to 0.75–0.83 at full decay; the labels-only ablation
+was the worst configuration because flagging all permission notes erodes the
+prohibitions too. Phase 3 continues with a second model family, H4 depth curves, H6
+capability-stripped skills and A-belief probes. Read the docs in order.
 
 Dev: `uv sync` then `uv run pytest`; lint with `uv run ruff check .`.
 Run: `uv run python -m decaymem.runner --config configs/<name>.yaml`, then

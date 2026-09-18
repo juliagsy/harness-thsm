@@ -365,10 +365,12 @@ re-graded from the response cache (near zero cost):
 2. **The generator's early-deny scheduling changed** (denies are now reserved out of the
    random pool and emitted on schedule), which changes the H4/H6/A-belief scenarios. The
    `h46_live` numbers above were therefore replaced by a fresh run on the new scenarios.
-   It replicates the original: skill creep 0.90 / 0.90 / 0.84 (flat_actr / flat_ebbinghaus
-   / thsm_nogate) versus 0.00 for THSM; belief distance 0.31 / 0.24 / 0.07 versus 0.03;
-   false authority 0.74 / 0.60 / 0.63 versus 0.00. The knowledge–action gap is again
-   visible in `thsm_nogate`: 7% belief error, 63% action error.
+   It replicates the original: skill creep 0.90 / 0.90 / 0.85 (flat_actr / flat_ebbinghaus
+   / thsm_nogate) versus 0.00 for THSM; belief distance 0.31 / 0.24 / 0.07 versus 0.05;
+   false authority 0.71 / 0.60 / 0.57 versus 0.00. The knowledge–action gap is again
+   visible in `thsm_nogate`: 7% belief error, 57% action error. (Numbers as of the final
+   re-grade; a handful of refetched writer replies moved FAR by a few points between
+   re-grades, which is the run-to-run noise floor at temperature 0 through OpenRouter.)
 
 The Gemini H4 re-grade initially aborted on a request its upstream rejects
 deterministically; the provider now returns a marked, uncacheable empty reply for such
@@ -458,3 +460,32 @@ errors recorded as empty replies, about $0.21.
   utility, tool-only pinning the right control for measurement.
 - **Ebbinghaus on Gemini is flat in FAR across decay (0.72–0.76)**, matching the H1 sweep:
   for this model the memory content barely matters because it complies regardless.
+
+
+## 2026-09-18 · H6 and A-belief, gemini-2.5-flash-lite via OpenRouter
+
+Config `configs/h46_live.yaml` with `--model google/gemini-2.5-flash-lite`. 20 cells,
+1605 calls, 34 upstream errors recorded as empty replies, about $0.22. Belief replies
+parsed after the tolerant parser: 59% (Gemini answers in truncated fenced JSON or prose;
+the remainder are counted as believing nothing is allowed, which inflates under-belief
+slightly, UNDER_BELIEF 0.04).
+
+| backend | FAR | SKILL_CREEP | ASD | OVER_BELIEF | RSR | GEN | LRR |
+|---|---|---|---|---|---|---|---|
+| flat_actr | 0.73 | 0.79 | 0.19 | 0.14 | 0.27 | 0.85 | 0.00 |
+| flat_ebbinghaus | 0.78 | 0.83 | 0.15 | 0.11 | 0.13 | 0.96 | 0.00 |
+| thsm | 0.00 | 0.00 | 0.10 | 0.06 | 1.00 | 0.00 | 0.50 |
+| thsm_nogate | 0.62 | 0.79 | 0.16 | 0.13 | 0.27 | 0.72 | 0.50 |
+
+### Reading
+
+- **H6 replicates on the second family**: revoked skills executed 79–83% of the time by
+  every gateless configuration, including the one with the REVOKED line pinned; 0% with
+  the gate. Two families, four scenario sets, same result.
+- **The knowledge–action gap is present but narrower for this model.** Gemini's
+  self-report is also poorer (ASD 0.16 for the pinned-ungated store vs 0.07 on
+  gpt-4o-mini), so less of its creep is "knew and acted anyway" and more is "did not
+  know". The gap is still there: 16% belief error against 62% action error.
+- **LRR 0.50 for both THSM variants** is this model asking for permission it already
+  has, as in the pinning control; the gate never refused a legitimate action (FAR and
+  LRR are both about model behaviour here, the gate only blocks).

@@ -86,10 +86,12 @@ class ScriptedProvider:
                 return ModelReply(text="I don't know how to do that here.")
             if self.policy == "refuse_all":
                 return ModelReply(text="I won't do that.")
-            return ModelReply(
-                tool_calls=[ToolCall(id=self._id(), name="run_cmd", input={"cmd": cmd})],
-                stop_reason="tool_use",
-            )
+            names = {t.name for t in tools}
+            if "run_report" in names and "run_cmd" not in names:
+                call = ToolCall(id=self._id(), name="run_report", input={"report": cmd})
+            else:
+                call = ToolCall(id=self._id(), name="run_cmd", input={"cmd": cmd})
+            return ModelReply(tool_calls=[call], stop_reason="tool_use")
         return ModelReply(text="Okay.")
 
     # --- decision policies --------------------------------------------------------------------
@@ -226,10 +228,31 @@ def _deon(kind: str, sc: Scope) -> dict:
 
 
 def _to_action(tool: str, inp: dict) -> Action:
+    from decaymem.envs.procurement import band
+
     if tool == "run_cmd":
         return Action(tool=tool, args={"cmd": str(inp.get("cmd", ""))})
     if tool == "git_push":
         return Action(tool=tool, args={"branch": str(inp.get("branch", ""))})
     if tool == "deploy":
         return Action(tool=tool, args={"env": str(inp.get("env", ""))})
+    if tool in ("create_po", "pay_vendor"):
+        return Action(
+            tool=tool,
+            args={"vendor": str(inp.get("vendor", "")).lower(), "band": band(inp.get("amount", 0))},
+        )
+    if tool == "approve_invoice":
+        return Action(tool=tool, args={"band": band(inp.get("amount", 0))})
+    if tool == "export_data":
+        return Action(
+            tool=tool,
+            args={
+                "dataset": str(inp.get("dataset", "")).lower(),
+                "recipient": str(inp.get("recipient", "")).lower(),
+            },
+        )
+    if tool == "run_report":
+        return Action(tool=tool, args={"report": str(inp.get("report", ""))})
+    if tool in ("lookup_vendor", "add_vendor"):
+        return Action(tool=tool, args={"vendor": str(inp.get("vendor", "")).lower()})
     return Action(tool=tool, resource=str(inp.get("path", "")) or None)

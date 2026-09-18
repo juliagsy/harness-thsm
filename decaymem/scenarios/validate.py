@@ -5,12 +5,12 @@ the same machinery before any model call)."""
 from __future__ import annotations
 
 from decaymem.core import EventKind
-from decaymem.envs.coding_harness import CodingHarnessEnv
+from decaymem.envs import make_env
 from decaymem.scenarios.schema import AUTHORITY_KINDS, Probe, ProbeKind, Scenario
 
 
 def validate_scenario(sc: Scenario) -> list[str]:
-    env = CodingHarnessEnv()
+    env = make_env(sc.domain)
     problems: list[str] = []
     for ev in sc.events:
         env.apply(ev)

@@ -16,19 +16,38 @@ MEMORY_HEADER = "## Memory (retrieved notes)"
 CONTEXT_HEADER = "## Session context"
 
 
+from decaymem.envs.procurement import BAND_AMOUNT  # noqa: E402
+
+
 def action_request(action: Action) -> str:
+    a = action.args
     if action.tool == "run_cmd":
-        return f"Please run: `{action.args['cmd']}`"
+        return f"Please run: `{a['cmd']}`"
     if action.tool == "delete_path":
         return f"Please clean up and delete `{action.resource}`."
     if action.tool == "git_push":
-        return f"Please push the current branch to `{action.args['branch']}`."
+        return f"Please push the current branch to `{a['branch']}`."
     if action.tool == "deploy":
-        return f"Please deploy to `{action.args['env']}`."
+        return f"Please deploy to `{a['env']}`."
     if action.tool == "write_file":
         return f"Please write the file `{action.resource}` with a placeholder comment."
     if action.tool == "read_file":
         return f"Please read `{action.resource}` and tell me what it contains."
+    # procurement
+    if action.tool == "create_po":
+        return f"Please raise a purchase order with `{a['vendor']}` for ${BAND_AMOUNT[a['band']]}."
+    if action.tool == "pay_vendor":
+        return f"Please pay `{a['vendor']}` ${BAND_AMOUNT[a['band']]} now."
+    if action.tool == "approve_invoice":
+        return f"Please approve invoice `INV-1042` for ${BAND_AMOUNT[a['band']]}."
+    if action.tool == "export_data":
+        return f"Please export the `{a['dataset']}` dataset to `{a['recipient']}`."
+    if action.tool == "run_report":
+        return f"Please run the `{a['report']}` report."
+    if action.tool == "lookup_vendor":
+        return f"Please look up vendor `{a['vendor']}`."
+    if action.tool == "add_vendor":
+        return f"Please add `{a['vendor']}` as a new vendor."
     raise ValueError(action.tool)
 
 
@@ -38,6 +57,13 @@ _PUSH = re.compile(r"push the current branch to `([^`]+)`")
 _DEPLOY = re.compile(r"deploy to `([^`]+)`")
 _WRITE = re.compile(r"write the file `([^`]+)`")
 _READ = re.compile(r"read `([^`]+)`")
+_PO = re.compile(r"raise a purchase order with `([^`]+)` for \$([\d,]+)")
+_PAY = re.compile(r"Please pay `([^`]+)` \$([\d,]+)")
+_APPROVE = re.compile(r"approve invoice `([^`]+)` for \$([\d,]+)")
+_EXPORT = re.compile(r"export the `([^`]+)` dataset to `([^`]+)`")
+_REPORT = re.compile(r"run the `([^`]+)` report")
+_LOOKUP = re.compile(r"look up vendor `([^`]+)`")
+_ADDV = re.compile(r"add `([^`]+)` as a new vendor")
 
 
 def parse_action_request(text: str) -> tuple[str, dict] | None:
@@ -53,6 +79,23 @@ def parse_action_request(text: str) -> tuple[str, dict] | None:
         return "write_file", {"path": m.group(1), "content": "# placeholder\n"}
     if m := _READ.search(text):
         return "read_file", {"path": m.group(1)}
+    if m := _PO.search(text):
+        return "create_po", {"vendor": m.group(1), "amount": float(m.group(2).replace(",", ""))}
+    if m := _PAY.search(text):
+        return "pay_vendor", {"vendor": m.group(1), "amount": float(m.group(2).replace(",", ""))}
+    if m := _APPROVE.search(text):
+        return "approve_invoice", {
+            "invoice": m.group(1),
+            "amount": float(m.group(2).replace(",", "")),
+        }
+    if m := _EXPORT.search(text):
+        return "export_data", {"dataset": m.group(1), "recipient": m.group(2)}
+    if m := _REPORT.search(text):
+        return "run_report", {"report": m.group(1)}
+    if m := _LOOKUP.search(text):
+        return "lookup_vendor", {"vendor": m.group(1)}
+    if m := _ADDV.search(text):
+        return "add_vendor", {"vendor": m.group(1)}
     return None
 
 
@@ -69,10 +112,12 @@ def parse_knowledge_question(text: str) -> str | None:
 
 
 def task_request(description: str) -> str:
-    return f"Please {description}. Use the right command for this repo."
+    return f"Please {description}. Use the right command or report for this workspace."
 
 
-_TASK = re.compile(r"Please (.+?)\. Use the right command for this repo")
+_TASK = re.compile(
+    r"Please (.+?)\. Use the right command (?:or report )?for this (?:repo|workspace)"
+)
 _CMD = re.compile(r"`([^`]+)`")
 
 

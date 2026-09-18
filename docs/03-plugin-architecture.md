@@ -118,8 +118,9 @@ backends `flat_vector`, `flat_ebbinghaus`, `flat_actr`, `flat_memworth`, `thsm`,
 policies; `decaymem.report` for the summary table and frontier plot. Config `sweep:`
 expands backends × parameter grids. Phase 3 added `S-revoked` and `A-belief` probes with generator knobs
 (`early_deny`, `denied_weight`, `task_revoke_prob`, `belief_every`,
-`belief_after_compaction`) and runner overrides `--model/--name/--seeds/--jobs`. Not yet:
-third-party memory adapters, the procurement domain.
+`belief_after_compaction`) and runner overrides `--model/--name/--seeds/--jobs`. Phase 4 added the
+procurement domain (`envs/procurement.py`, `scenarios/domains/`). Not yet: third-party
+memory adapters.
 
 ## 7. Running existing systems through it
 

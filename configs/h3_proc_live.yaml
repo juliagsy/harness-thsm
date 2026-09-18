@@ -1,0 +1,14 @@
+# Procurement domain live on gpt-4o-mini (~$0.30 for 25 cells); rerun with --model for others.
+name: h3_proc_live
+scenario: { source: generator, generator: { domain: procurement, horizon: 400, probe_every: 12 } }
+provider: { name: openrouter, model: openai/gpt-4o-mini, max_tokens: 1024, cache: true, cache_dir: data/cache }
+backend:
+  - { name: flat_ebbinghaus, params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm,            params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm_nogate,     params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: labels_notypes,  params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: typed_nolabels,  params: { aggressiveness: 0.5, cap: 40 } }
+writer: { name: llm_typed, every_n: 10 }
+compaction: llm_summary_pinned
+retrieval_k: 8
+seeds: [0, 1, 2, 3, 4]

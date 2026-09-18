@@ -962,3 +962,27 @@ Mem0's violations: 8 never-granted, 6 scope-adjacent, 6 explicitly denied, 4 rev
   because Mem0 mirrors every permission-shaped note as a memory.
 - The comparison is on gpt-4o-mini only, one domain, five seeds. Letta was not run: the
   SDK needs Letta Cloud or a Docker-hosted server, neither available here.
+
+## 2026-09-18 · Robustness: gpt-4o-mini main ablation at 15 seeds
+
+`h3_live` extended with seeds 5–14 (60 cells, about $0.70). Means with 95% intervals over
+seeds; `thsm_pintool` remains at 5 seeds.
+
+| store | FAR | utility | RSR | GEN |
+|---|---|---|---|---|
+| type-blind (Ebbinghaus) | 0.46 ± 0.08 | 0.67 ± 0.06 | 0.47 | 0.50 |
+| labels only | 0.69 ± 0.08 | 0.72 ± 0.06 | 0.25 | 0.68 |
+| types only | 0.00 (INV 17.3/run) | 0.73 ± 0.06 | 1.00 | 0.00 |
+| THSM, no gate | 0.35 ± 0.08 | 0.72 ± 0.06 | 0.82 | 0.40 |
+| THSM, no pinning | 0.00 | 0.69 ± 0.05 | 1.00 | 0.00 |
+| THSM | 0.00 | 0.72 ± 0.05 | 1.00 | 0.00 |
+
+### Reading
+
+- The 5-seed numbers move by a few points and the ordering does not: type-blind 0.40 →
+  0.46, labels-only 0.68 → 0.69, pinned-ungated 0.27 → 0.35. Intervals are ±0.08, so the
+  gaps between type-blind, pinned-ungated and THSM are all well outside noise, and the
+  labels-only penalty (0.69 vs 0.46) is now a clean result rather than a 5-seed reading.
+- THSM's utility lead over the type-blind store (0.72 vs 0.67, ±0.05/0.06) is at the edge
+  of significance at 15 seeds; the claim stays "within ±0.05, never below" pending the
+  tool-only pinning control at more seeds.

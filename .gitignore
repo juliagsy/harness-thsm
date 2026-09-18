@@ -8,3 +8,4 @@ experiments/*/results/
 data/cache/
 .env
 .env.*
+data/arc/

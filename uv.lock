@@ -233,6 +233,20 @@ wheels = [
 ]
 
 [[package]]
+name = "continual-arc"
+source = { editable = "../continual-arc" }
+
+[package.metadata]
+requires-dist = [
+    { name = "matplotlib", marker = "extra == 'dev'", specifier = ">=3.7" },
+    { name = "matplotlib", marker = "extra == 'plots'", specifier = ">=3.7" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
+]
+provides-extras = ["dev", "plots"]
+
+[[package]]
 name = "contourpy"
 version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -411,6 +425,9 @@ dependencies = [
 anthropic = [
     { name = "anthropic" },
 ]
+arc = [
+    { name = "continual-arc" },
+]
 mem0 = [
     { name = "mem0ai" },
     { name = "sentence-transformers" },
@@ -425,6 +442,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "anthropic", marker = "extra == 'anthropic'", specifier = ">=0.50" },
+    { name = "continual-arc", marker = "extra == 'arc'", editable = "../continual-arc" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "matplotlib", specifier = ">=3.8" },
     { name = "mem0ai", marker = "extra == 'mem0'", specifier = ">=0.1.100" },
@@ -432,7 +450,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6" },
     { name = "sentence-transformers", marker = "extra == 'mem0'", specifier = ">=3.0" },
 ]
-provides-extras = ["anthropic", "mem0"]
+provides-extras = ["anthropic", "mem0", "arc"]
 
 [package.metadata.requires-dev]
 dev = [

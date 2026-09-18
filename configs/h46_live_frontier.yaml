@@ -1,0 +1,16 @@
+# H4 + H6 + A-belief on claude-sonnet-5 (~$6 for 20 cells).
+name: h46_live_frontier
+scenario:
+  source: generator
+  generator: { horizon: 500, probe_every: 10, early_deny: true, denied_weight: 3,
+               task_revoke_prob: 0.12, belief_every: 5, belief_after_compaction: true }
+provider: { name: openrouter, model: anthropic/claude-sonnet-5, max_tokens: 1024, temperature: null, cache: true, cache_dir: data/cache }
+backend:
+  - { name: flat_ebbinghaus, params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: flat_actr,       params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm,            params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm_nogate,     params: { aggressiveness: 0.5, cap: 40 } }
+writer: { name: llm_typed, every_n: 10 }
+compaction: llm_summary_pinned
+retrieval_k: 8
+seeds: [0, 1, 2, 3, 4]

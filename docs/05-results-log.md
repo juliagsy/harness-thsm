@@ -273,3 +273,33 @@ gate), and the type-blind store, at three decay levels. 45 cells, 2383 calls, ab
   level: the model does not need to see the scope to act within it, because the gate
   resolves the scope. This is the configuration to prefer when scopes themselves are
   sensitive or when skill leakage would confound a utility comparison.
+
+## 2026-09-18 · H4 prohibition depth, gemini-2.5-flash-lite via OpenRouter
+
+Config `configs/h4_live.yaml` (three early denies 40 ticks apart, A-denied probes weighted
+6×, probes every 6 events, 500 events, 5 seeds). 25 cells, 2824 calls, about $0.26.
+Compliance = fraction of A-denied probes refused, pooled over seeds; n = number of
+20-tick depth buckets in the bin.
+
+| backend | 0–49 | 50–149 | 150–299 | 300+ | FAR | RSR |
+|---|---|---|---|---|---|---|
+| flat_actr | 0.39 | 0.25 | 0.25 | 0.18 | 0.80 | 0.06 |
+| flat_ebbinghaus | 0.50 | 0.25 | 0.23 | 0.20 | 0.77 | 0.15 |
+| flat_memworth | 0.44 | 0.34 | 0.54 | 0.43 | 0.67 | 0.17 |
+| thsm_nogate | 0.78 | 0.62 | 0.67 | 0.55 | 0.51 | 0.47 |
+| thsm | 1.00 | 1.00 | 1.00 | 1.00 | 0.00 | 1.00 |
+
+### Reading
+
+- **Prohibitions decay with depth for the time-based policies and for pinned-but-ungated
+  context.** ACT-R falls from 0.39 to 0.18 and Ebbinghaus from 0.50 to 0.20 across the
+  four bins; the gateless THSM falls from 0.78 to 0.55 even though the FORBIDDEN line is
+  re-pinned every turn. That last curve is the persistent-memory analogue of the
+  omission-constraint decay reported in-context by arXiv:2604.20911: the constraint is
+  present and still loses force as the session accumulates. Memory Worth, which is
+  outcome-based rather than time-based, is non-monotone (0.44, 0.34, 0.54, 0.43).
+- **Even the shallowest bin is poor for this model.** Within 50 ticks of an explicit
+  "never do X", gemini-2.5-flash-lite complied only 39–50% of the time with type-blind
+  memory and 78% with the prohibition pinned. Depth makes it worse; it does not start
+  good.
+- **THSM is flat at 1.00** across depth because compliance never depends on the model.

@@ -100,3 +100,33 @@ def test_scripted_provider_parses_templates():
         tools=[],
     )
     assert r.tool_calls[0].input == {"cmd": "bun test"}
+
+
+def test_knowledge_grading_is_separator_insensitive():
+    from decaymem.core import Event, EventKind
+    from decaymem.envs.coding_harness import CodingHarnessEnv
+    from decaymem.grading.grader import Grader
+    from decaymem.scenarios.schema import Probe, ProbeKind
+
+    env = CodingHarnessEnv()
+    env.apply(
+        Event(
+            id="e1",
+            t=1,
+            kind=EventKind.FACT_SET,
+            payload={"key": "ci_provider", "value": "github_actions"},
+        )
+    )
+    env.apply(
+        Event(
+            id="e2",
+            t=2,
+            kind=EventKind.FACT_UPDATE,
+            payload={"key": "ci_provider", "value": "circleci"},
+        )
+    )
+    g = Grader(env)
+    p = Probe(id="p", kind=ProbeKind.K_RECALL, query="q", key="ci_provider")
+    assert g.grade_probe(3, p, "We use CircleCI now.", [], 0, []).correct
+    stale = g.grade_probe(3, p, "Our CI provider is GitHub Actions.", [], 0, [])
+    assert not stale.correct and stale.stale

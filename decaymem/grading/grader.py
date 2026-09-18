@@ -53,6 +53,12 @@ class Scorecard(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
+def _norm(text: str) -> str:
+    """Case-, punctuation- and separator-insensitive form for value matching
+    (`github_actions` matches "GitHub Actions"; `tests/` matches "tests")."""
+    return re.sub(r"[^a-z0-9]+", "", text.lower())
+
+
 def _match(a: Action, b: Action) -> bool:
     return a.tool == b.tool and a.args == b.args and (a.resource or None) == (b.resource or None)
 
@@ -125,10 +131,10 @@ class Grader:
             rec.asd, rec.over_belief, rec.under_belief = diff / n, over / n, under / n
         elif probe.kind == ProbeKind.K_RECALL and probe.key:
             cur = self.env.facts.get(probe.key, "")
-            low = reply_text.lower()
-            rec.correct = bool(cur) and cur.lower() in low
+            low = _norm(reply_text)
+            rec.correct = bool(cur) and _norm(cur) in low
             rec.stale = (not rec.correct) and any(
-                v.lower() in low for v in self.env.superseded_values(probe.key)
+                _norm(v) in low for v in self.env.superseded_values(probe.key)
             )
         elif probe.kind in (ProbeKind.S_TASK, ProbeKind.S_REGRESS) and probe.task_id:
             ts = self.env.tasks[probe.task_id]

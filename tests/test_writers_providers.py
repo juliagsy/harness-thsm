@@ -183,3 +183,56 @@ def test_openrouter_preset_requires_key(monkeypatch):
     p = OpenAICompatProvider(model="m", preset="openrouter")
     assert p.base_url == "https://openrouter.ai/api/v1"
     assert p.headers["Authorization"] == "Bearer k" and "X-Title" in p.headers
+
+
+def test_openai_parser_recovers_literal_calls_reasoning_and_errors():
+    import pytest
+
+    from decaymem.providers.openai_compat import ProviderError
+
+    r = parse_openai_response(
+        {
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {
+                        "content": "I'll deploy now. <function=deploy> <parameter=env> staging </parameter>"
+                        " </function>"
+                    },
+                }
+            ]
+        }
+    )
+    assert r.tool_calls[0].name == "deploy" and r.tool_calls[0].input == {"env": "staging"}
+    assert "<function" not in r.text and r.stop_reason == "tool_use"
+    r = parse_openai_response(
+        {
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {"content": "", "reasoning": "The package manager is bun."},
+                }
+            ]
+        }
+    )
+    assert "bun" in r.text
+    r = parse_openai_response(
+        {
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {
+                        "content": [
+                            {"type": "text", "text": "part one"},
+                            {"type": "text", "text": "two"},
+                        ]
+                    },
+                }
+            ]
+        }
+    )
+    assert r.text == "part one\ntwo"
+    with pytest.raises(ProviderError):
+        parse_openai_response({"choices": [{"finish_reason": "error", "message": {"content": ""}}]})
+    with pytest.raises(ProviderError):
+        parse_openai_response({"error": {"message": "upstream"}})

@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import time
 from typing import Any
 
 import httpx
@@ -78,8 +80,45 @@ def to_openai_tools(tools: list[ToolSpec]) -> list[dict[str, Any]]:
     ]
 
 
+_FUNC_TAG = re.compile(r"<function=([\w.-]+)>(.*?)</function>", re.S)
+_PARAM_TAG = re.compile(r"<parameter=([\w.-]+)>\s*(.*?)\s*</parameter>", re.S)
+
+
+class ProviderError(RuntimeError):
+    """Raised for provider-side failures so the cache never stores them."""
+
+
+def _content_text(content: Any) -> str:
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):  # some providers return content parts
+        return "\n".join(
+            str(part.get("text", ""))
+            for part in content
+            if isinstance(part, dict) and part.get("type") in (None, "text")
+        )
+    return str(content)
+
+
+def parse_literal_tool_calls(text: str) -> tuple[str, list[ToolCall]]:
+    """Some open models emit tool calls as `<function=name><parameter=k>v</parameter></function>`
+    text instead of structured calls. Recover them so the run measures the model, not the
+    serialisation."""
+    calls: list[ToolCall] = []
+    for i, m in enumerate(_FUNC_TAG.finditer(text)):
+        params = {k: v for k, v in _PARAM_TAG.findall(m.group(2))}
+        calls.append(ToolCall(id=f"literal_{i}", name=m.group(1), input=params))
+    return (_FUNC_TAG.sub("", text).strip() if calls else text), calls
+
+
 def parse_openai_response(data: dict[str, Any]) -> ModelReply:
+    if "error" in data and not data.get("choices"):
+        raise ProviderError(str(data["error"])[:300])
     choice = data["choices"][0]
+    if choice.get("finish_reason") == "error" or choice.get("error"):
+        raise ProviderError(f"provider returned finish_reason=error: {choice.get('error')}")
     msg = choice.get("message", {})
     calls: list[ToolCall] = []
     for tc in msg.get("tool_calls") or []:
@@ -96,8 +135,14 @@ def parse_openai_response(data: dict[str, Any]) -> ModelReply:
             )
         )
     usage = data.get("usage") or {}
+    text = _content_text(msg.get("content"))
+    if not text and not calls:
+        # thinking models sometimes put the whole answer in a reasoning field
+        text = _content_text(msg.get("reasoning") or msg.get("reasoning_content"))
+    if not calls and "<function=" in text:
+        text, calls = parse_literal_tool_calls(text)
     return ModelReply(
-        text=msg.get("content") or "",
+        text=text,
         tool_calls=calls,
         usage={
             "input_tokens": int(usage.get("prompt_tokens", 0)),
@@ -120,6 +165,7 @@ class OpenAICompatProvider:
         temperature: float = 0.0,
         timeout: float = 120.0,
         extra_body: dict[str, Any] | None = None,
+        retries: int = 4,
     ) -> None:
         cfg = dict(PRESETS.get(preset or "", {}))
         self.name = preset or "openai_compat"
@@ -141,6 +187,7 @@ class OpenAICompatProvider:
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.extra_body = extra_body or {}
+        self.retries = retries
         self._client = httpx.Client(timeout=timeout)
 
     def complete(
@@ -156,7 +203,20 @@ class OpenAICompatProvider:
         if tools:
             body["tools"] = to_openai_tools(tools)
             body["tool_choice"] = "auto"
-        r = self._client.post(f"{self.base_url}/chat/completions", headers=self.headers, json=body)
-        if r.status_code >= 400:
-            raise RuntimeError(f"{self.name} {r.status_code}: {r.text[:500]}")
-        return parse_openai_response(r.json())
+        last: Exception | None = None
+        for attempt in range(self.retries):
+            try:
+                r = self._client.post(
+                    f"{self.base_url}/chat/completions", headers=self.headers, json=body
+                )
+                if r.status_code == 429 or r.status_code >= 500:
+                    raise ProviderError(f"{self.name} {r.status_code}: {r.text[:300]}")
+                if r.status_code >= 400:
+                    raise RuntimeError(f"{self.name} {r.status_code}: {r.text[:500]}")
+                reply = parse_openai_response(r.json())
+                reply.model = self.model
+                return reply
+            except (ProviderError, httpx.HTTPError) as e:  # transient: retry with backoff
+                last = e
+                time.sleep(min(2.0**attempt, 20.0))
+        raise RuntimeError(f"{self.name}: giving up after {self.retries} attempts: {last}")

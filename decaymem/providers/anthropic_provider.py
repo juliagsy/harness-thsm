@@ -58,4 +58,5 @@ class AnthropicProvider:
                 "output_tokens": resp.usage.output_tokens,
             },
             stop_reason=resp.stop_reason or "end_turn",
+            model=self.model,
         )

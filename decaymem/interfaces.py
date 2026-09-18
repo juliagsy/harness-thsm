@@ -28,6 +28,7 @@ class ModelReply(BaseModel):
     usage: dict[str, int] = Field(default_factory=dict)
     stop_reason: str = "end_turn"
     cached: bool = False
+    model: str = ""
 
     def assistant_message(self) -> dict[str, Any]:
         if self.raw_content:

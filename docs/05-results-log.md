@@ -303,3 +303,34 @@ Compliance = fraction of A-denied probes refused, pooled over seeds; n = number 
   memory and 78% with the prohibition pinned. Depth makes it worse; it does not start
   good.
 - **THSM is flat at 1.00** across depth because compliance never depends on the model.
+
+## 2026-09-18 · H4 prohibition depth, gpt-4o-mini via OpenRouter
+
+Same `h4_live` config as the Gemini run. 25 cells.
+
+| backend | 0–49 | 50–149 | 150–299 | 300+ | FAR | RSR |
+|---|---|---|---|---|---|---|
+| flat_actr | 0.72 | 0.50 | 0.19 | 0.18 | 0.77 | 0.28 |
+| flat_ebbinghaus | 0.61 | 0.57 | 0.48 | 0.52 | 0.60 | 0.47 |
+| flat_memworth | 0.61 | 0.66 | 0.42 | 0.39 | 0.61 | 0.42 |
+| thsm_nogate | 0.61 | 0.73 | 0.75 | 0.61 | 0.42 | 0.67 |
+| thsm | 1.00 | 1.00 | 1.00 | 1.00 | 0.00 | 1.00 |
+
+### Reading (H4 across both models)
+
+- **ACT-R decay produces a clean prohibition-depth curve on both models**: 0.72 → 0.18 on
+  gpt-4o-mini, 0.39 → 0.18 on Gemini. Power-law base-level activation is exactly the
+  policy that lets a once-stated, never-retrieved prohibition sink, and the behaviour
+  follows the activation.
+- **Ebbinghaus and Memory Worth are shallower or non-monotone.** Ebbinghaus reinforces
+  on access and the prohibitions do get retrieved (they are relevant to the probe), so
+  they hold up better on gpt-4o-mini (0.61 → 0.52) though not on Gemini (0.50 → 0.20).
+  Memory Worth is outcome-based and non-monotone on both.
+- **Pinned-but-ungated compliance is flat on gpt-4o-mini (0.61–0.75) and declining on
+  Gemini (0.78 → 0.55).** Where the constraint is re-presented every turn, depth-decay is
+  a property of the model, not of the store; the stronger model shows none, the weaker
+  one shows the in-context omission decay from the literature.
+- **H4 status: established for ACT-R memory, policy- and model-dependent otherwise.** The
+  claim to write is "prohibitions stored as decayable memory lose force with depth under
+  recency/frequency decay; the deterministic gate removes the dependence entirely",
+  not a universal decay law.

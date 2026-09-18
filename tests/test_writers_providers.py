@@ -196,8 +196,8 @@ def test_openai_parser_recovers_literal_calls_reasoning_and_errors():
                 {
                     "finish_reason": "stop",
                     "message": {
-                        "content": "I'll deploy now. <function=deploy> <parameter=env> staging </parameter>"
-                        " </function>"
+                        "content": "I'll deploy now. <function=deploy> <parameter=env> staging "
+                        "</parameter> </function>"
                     },
                 }
             ]

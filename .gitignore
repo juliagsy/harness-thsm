@@ -6,3 +6,5 @@ __pycache__/
 dist/
 experiments/*/results/
 data/cache/
+.env
+.env.*

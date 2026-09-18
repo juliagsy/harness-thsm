@@ -10,6 +10,9 @@ def _fmt(v: float) -> str:
 
 
 def main() -> None:
+    from decaymem.dotenv import load_dotenv
+
+    load_dotenv()
     ap = argparse.ArgumentParser(prog="decaymem.runner")
     ap.add_argument("--config", required=True)
     ap.add_argument("--no-write", action="store_true")

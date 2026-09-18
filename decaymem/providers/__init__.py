@@ -6,6 +6,9 @@ OPENAI_COMPAT_NAMES = {"openai_compat", "openrouter", "openai", "ollama", "vllm"
 
 def make_provider(cfg: dict):
     """Build a provider from a config dict: {name, model, cache_dir, ...}."""
+    from decaymem.dotenv import load_dotenv
+
+    load_dotenv()
     name = cfg.get("name", "scripted")
     if name == "scripted":
         base = ScriptedProvider(

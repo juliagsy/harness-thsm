@@ -23,12 +23,14 @@ H3/H5 ablation and the H1 decay sweep both ran end to end for under a dollar. TH
 authority fidelity at 1.00 at every decay level while type-blind stores creep from about
 0.50 false authority with no decay to 0.75–0.83 at full decay; the labels-only ablation
 was the worst configuration because flagging all permission notes erodes the
-prohibitions too. Phase 3 has run sixteen live experiments across four model families (gpt-4o-mini,
-gemini-2.5-flash-lite, qwen3-coder-30b, claude-sonnet-5) for about $13.80: THSM at zero
-false authority in roughly 650 cells with equal or better utility; pinned constraints
-alone leave 22–60% false authority depending on the model; revoked skills are executed
-66–97% of the time without a call-time gate; labels alone hurt on three of four families;
-types alone pass behaviourally but violate the invariants on every family. Details and open items in the results log. Read the docs in order.
+prohibitions too. Phases 3 and 4 have run twenty-three live experiments across four model families
+(gpt-4o-mini, gemini-2.5-flash-lite, qwen3-coder-30b, claude-sonnet-5) and two domains
+(coding harness, procurement) for about $17: THSM at zero false authority in roughly 800
+cells at utility within ±0.05 of type-blind stores; pinned constraints alone leave 20–60%
+false authority; revoked skills are executed 66–97% of the time without a call-time gate;
+models state the authority state correctly and act against it; labels alone hurt; types
+alone violate the invariants; compaction is not the main erosion path once memory persists.
+Details and open items in the results log. Read the docs in order.
 
 Dev: `uv sync` then `uv run pytest`; lint with `uv run ruff check .`.
 Run: `uv run python -m decaymem.runner --config configs/<name>.yaml`, then

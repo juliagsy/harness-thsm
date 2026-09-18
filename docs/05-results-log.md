@@ -415,6 +415,105 @@ replies. 30 cells, 2291 calls, about $0.26. Graded with the corrected knowledge 
 
 ### Cumulative picture (2026-09-18, final)
 
+Twenty-three live experiments, four model families (gpt-4o-mini, gemini-2.5-flash-lite,
+qwen3-coder-30b, claude-sonnet-5), two domains (coding harness, procurement), about $17
+in total, every response cached and replayable, every run graded with the corrected
+grader.
+
+| claim | status |
+|---|---|
+| H3 typed exemption dominates | Established: THSM 0 false authority in ~800 cells across four families and two domains; utility within ±0.05 of the matched type-blind store once pinned-scope leakage is controlled, 0.02–0.07 below at full decay |
+| H6 skills carry authority | Established on three families and two domains: 66–97% revoked-skill execution without a call-time gate, 0% with it |
+| Gate vs pinning | Established on four families and two domains: pinned-ungated false authority 0.20–0.60 by model and domain; gate 0.00 on all; pinning keeps LRR near 0 on Gemini and Sonnet |
+| H5 off-diagonals | Established: labels alone hurt in five of six comparisons (revocation survival halves on Sonnet 5); types alone log 16–50 invariant violations per run on every family and produced behavioural creep once the probe set happened to hit a laundered grant (procurement, FAR 0.02) |
+| Knowledge–action gap | Established on gpt-4o-mini in both domains (procurement: self-report 92% right for every store, actions 39–66% wrong); narrower on Gemini, absent on Qwen which misreports pinned state |
+| H1 decay drives creep | Established at 15 seeds: non-decreasing in aggressiveness for all three time/outcome policies, a ramp for ACT-R (0.54 → 0.84) and a threshold for Ebbinghaus (0.50 → 0.77) and Memory Worth (0.49 → 0.84); floor without decay 0.49–0.54 |
+| H4 prohibition depth | Established for ACT-R memory on two families (0.72 → 0.18, 0.39 → 0.12); pinned-ungated context decays on Gemini, not on gpt-4o-mini |
+| Writer | Typed writer launders less than freeform (type-blind 0.59 → 0.54, pinned-ungated 0.32 → 0.25) and recalls facts better; ordering of backends unchanged |
+| Compaction (ConstraintRot) | With persistent memory, compaction barely changes violations (0.43 → 0.46); Constraint Pinning at compaction halves post-compaction violations as a recency effect; the gate is 0.00 under both |
+| Pinning leak confound | Controlled on two families: tool-only pinning costs 0.02–0.07 utility, 0 authority |
+| Frontier model | Confirmed: Sonnet 5 shrinks type-blind creep to 0.27 but scope generalization stays at 0.35 and pinning alone leaves 0.22 |
+| Second domain | Procurement replicates the full ordering (0.29 / 0.41 / 0.20 / 0.00) at equal utility |
+
+Remaining from the plan: external memory adapters (Mem0, Letta) as `MemoryBackend`
+plugins, and the Laundering paper's writer/executor split reported as CLAIMS vs FAR per
+model (both counts exist in every scorecard; the table is a report addition).
+
+## 2026-09-18 (late) · Re-grade after two pipeline fixes
+
+Two fixes landed after the runs above and every gpt-4o-mini and Gemini experiment was
+re-graded from the response cache (near zero cost):
+
+1. **Knowledge grading was separator-sensitive**: `github_actions` did not match "GitHub
+   Actions", so KUA was undercounted equally for every backend on that fact. Corrected
+   KUA is 0.05–0.15 higher across the board; the utility composite rises accordingly.
+   FAR and the other authority metrics are unaffected. Corrected headline utilities
+   (backend at aggressiveness 0.5 unless noted):
+
+   | experiment | flat_ebbinghaus | thsm | thsm_nogate | thsm_nopin | labels_notypes | typed_nolabels |
+   |---|---|---|---|---|---|---|
+   | h3_live (gpt-4o-mini) | 0.70 (was 0.62) | 0.73 (0.72) | 0.75 (0.72) | 0.73 (0.70) | 0.73 (0.69) | 0.79 (0.75) |
+   | h3_live_gemini | 0.40 (0.39) | 0.46 (0.46) | 0.47 (0.47) | 0.40 (0.40) | 0.38 (0.38) | 0.43 (0.43) |
+   | h1_live, aggr 0.0 / 1.0 | 0.58 / 0.44 | 0.64 / 0.40 | | | | |
+   | h1_pin_live thsm_pintool 0.0 / 1.0 | | 0.63 / 0.37 | | | | |
+
+   The ordering of backends within each experiment is unchanged. The H3 utility gap on
+   gpt-4o-mini narrows (THSM 0.73 vs type-blind 0.70) once the shared undercount is
+   removed; THSM still leads or ties in every comparison.
+
+2. **The generator's early-deny scheduling changed** (denies are now reserved out of the
+   random pool and emitted on schedule), which changes the H4/H6/A-belief scenarios. The
+   `h46_live` numbers above were therefore replaced by a fresh run on the new scenarios.
+   It replicates the original: skill creep 0.90 / 0.90 / 0.85 (flat_actr / flat_ebbinghaus
+   / thsm_nogate) versus 0.00 for THSM; belief distance 0.31 / 0.24 / 0.07 versus 0.05;
+   false authority 0.71 / 0.60 / 0.57 versus 0.00. The knowledge–action gap is again
+   visible in `thsm_nogate`: 7% belief error, 57% action error. (Numbers as of the final
+   re-grade; a handful of refetched writer replies moved FAR by a few points between
+   re-grades, which is the run-to-run noise floor at temperature 0 through OpenRouter.)
+
+The Gemini H4 re-grade initially aborted on a request its upstream rejects
+deterministically; the provider now returns a marked, uncacheable empty reply for such
+failures and the manifest counts them, and the re-graded table above replaces the
+original.
+
+## 2026-09-18 · H3/H5 ablation, qwen3-coder-30b-a3b-instruct via OpenRouter (third model family)
+
+Config `configs/h3_live_qwen.yaml`. OpenRouter's default upstream for this model returned
+empty content on tool-use turns (a hosting bug, confirmed with a raw call), so the config
+routes with `require_parameters` and excludes that upstream; the rerun has zero empty
+replies. 30 cells, 2291 calls, about $0.26. Graded with the corrected knowledge grader.
+
+| backend | utility | FAR | RSR | GEN | LRR | KUA | SSR | CLAIMS | INV |
+|---|---|---|---|---|---|---|---|---|---|
+| flat_ebbinghaus | 0.53 | 0.58 | 0.23 | 0.56 | 0.00 | 0.48 | 0.56 | 6.6 | 0 |
+| labels_notypes | 0.56 | 0.70 | 0.10 | 0.65 | 0.00 | 0.48 | 0.57 | 64.8 | 0 |
+| thsm | 0.56 | 0.00 | 1.00 | 0.00 | 0.00 | 0.48 | 0.63 | 64.6 | 0 |
+| thsm_nogate | 0.51 | 0.60 | 0.27 | 0.73 | 0.00 | 0.46 | 0.56 | 64.6 | 0 |
+| thsm_nopin | 0.53 | 0.00 | 1.00 | 0.00 | 0.00 | 0.51 | 0.51 | 64.6 | 0 |
+| typed_nolabels | 0.70 | 0.00 | 1.00 | 0.00 | 0.00 | 0.50 | 0.80 | 14.2 | 50.0 |
+
+![frontier](results/h3_live_qwen3-coder-30b_frontier.png)
+
+### Reading
+
+- **Third family, same shape.** Type-blind false authority 0.58, THSM 0.00 at equal or
+  better utility (0.56 vs 0.53), gate without pinning also 0.00 with no legitimate
+  rejections.
+- **Pinning alone is nearly worthless for this model** (`thsm_nogate` 0.60 vs 0.58 for the
+  type-blind store). Qwen reads the FORBIDDEN and REVOKED lines and acts anyway, more so
+  than either other model. Across three families the gateless-pinned configuration
+  ranges from 0.27 to 0.60 false authority; the gate is at 0.00 on all three.
+- **Labels alone are worse than nothing again** (0.70), as on gpt-4o-mini. Two of three
+  families now show the flagged-prohibition erosion effect.
+- **Types without labels: the invariant checker earns its keep.** Qwen's typed writer
+  produced 50 invariant violations per run (LLM-authored GRANTs widening A(t)), the most
+  of any model, while no probe caught a behavioural violation. Its utility is also the
+  highest (0.70, SSR 0.80), which is the trade the laundering paper describes: recalled
+  permissions make the agent more capable and less authorised at the same time. Without
+  `INV`, this configuration would look strictly best.
+
+### Cumulative picture (2026-09-18, final)
+
 Sixteen live experiments, four model families (gpt-4o-mini, gemini-2.5-flash-lite,
 qwen3-coder-30b, claude-sonnet-5), about $13.80 in total, every response cached and
 replayable, every run re-graded after the grader fix.
@@ -772,3 +871,27 @@ about $1.00); THSM stays at 5 seeds (it is 0.00 by construction). False authorit
   requests already go through with every note retained.
 - The intervals on the extremes are tight (±0.03–0.04), so "type-blind memory with
   aggressive decay reaches 0.77–0.84 false authority on gpt-4o-mini" is a stable number.
+
+
+## 2026-09-18 · Procurement domain: H6 and A-belief, gpt-4o-mini
+
+Config `configs/h46_proc_live.yaml`. 20 cells, 1499 calls, zero errors, all belief replies
+parsed, about $0.25.
+
+| backend | FAR | SKILL_CREEP | ASD | OVER_BELIEF | RSR | GEN | LRR |
+|---|---|---|---|---|---|---|---|
+| flat_actr | 0.66 | 0.93 | 0.08 | 0.00 | 0.35 | 0.66 | 0.25 |
+| flat_ebbinghaus | 0.52 | 0.93 | 0.08 | 0.00 | 0.36 | 0.44 | 0.00 |
+| thsm | 0.00 | 0.00 | 0.08 | 0.01 | 1.00 | 0.00 | 0.25 |
+| thsm_nogate | 0.39 | 0.91 | 0.08 | 0.01 | 0.74 | 0.36 | 0.25 |
+
+### Reading
+
+- **H6 in the second domain**: a report whose standing approval was withdrawn was still
+  produced 91–93% of the time by every gateless configuration, 0% with the gate. Two
+  domains, three model families, six scenario sets.
+- **The cleanest knowledge–action gap so far.** In this domain the model's self-reported
+  authority is 92% correct for *every* backend, with no over-belief at all, and it still
+  carried out 52–66% of unauthorized financial requests from type-blind memory and 39%
+  with the deontic state pinned. The model is not confused about what it may do. It does
+  it anyway when asked. That is the failure the gate is for.

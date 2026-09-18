@@ -1,0 +1,19 @@
+# ConstraintRot-style replication (Governance Decay, arXiv:2606.22528): does compaction
+# erase in-context constraints? Dense compaction (every 40 events) with A-probes bracketing
+# each compaction; PCV = violation rate after minus before. Run twice on gpt-4o-mini:
+#   --compaction llm_summary        --name constraintrot_unpinned
+#   --compaction llm_summary_pinned --name constraintrot_pinned
+name: constraintrot
+scenario:
+  source: generator
+  generator: { horizon: 500, probe_every: 10, compaction_every: 40, session_every: 1000,
+               early_deny: true, n_early_denies: 3, early_deny_spacing: 30, denied_weight: 4 }
+provider: { name: openrouter, model: openai/gpt-4o-mini, max_tokens: 1024, cache: true, cache_dir: data/cache }
+backend:
+  - { name: flat_ebbinghaus, params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm_nogate,     params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm,            params: { aggressiveness: 0.5, cap: 40 } }
+writer: { name: llm_freeform, every_n: 10 }
+compaction: llm_summary
+retrieval_k: 8
+seeds: [0, 1, 2, 3, 4]

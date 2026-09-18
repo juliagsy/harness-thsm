@@ -21,6 +21,9 @@ def main() -> None:
     ap.add_argument("--name", help="override experiment name (results dir)")
     ap.add_argument("--seeds", help="override seeds, comma-separated")
     ap.add_argument("--writer", help="override writer.name (llm_freeform | llm_typed)")
+    ap.add_argument(
+        "--compaction", help="override compaction (truncate | llm_summary | llm_summary_pinned)"
+    )
     args = ap.parse_args()
     cfg = load_config(args.config)
     if args.model:
@@ -31,6 +34,8 @@ def main() -> None:
         cfg.seeds = [int(x) for x in args.seeds.split(",")]
     if args.writer:
         cfg.writer["name"] = args.writer
+    if args.compaction:
+        cfg.compaction = args.compaction
     import sys
 
     results = run_matrix(

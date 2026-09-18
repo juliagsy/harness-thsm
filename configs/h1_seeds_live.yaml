@@ -1,0 +1,13 @@
+# Item 1a: ten more seeds on the type-blind H1 sweep (gpt-4o-mini). Written into the
+# h1_live results dir so the report pools 15 seeds. ~150 cells, ~$1.
+name: h1_live
+scenario: { source: generator, generator: { horizon: 400, probe_every: 12 } }
+provider: { name: openrouter, model: openai/gpt-4o-mini, max_tokens: 1024, cache: true, cache_dir: data/cache }
+sweep:
+  backends: [flat_ebbinghaus, flat_actr, flat_memworth]
+  params: { aggressiveness: [0.0, 0.25, 0.5, 0.75, 1.0] }
+  base_params: { cap: 40 }
+writer: { name: llm_freeform, every_n: 10, max_notes: 10 }
+compaction: llm_summary
+retrieval_k: 8
+seeds: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14]

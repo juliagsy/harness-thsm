@@ -1,0 +1,9 @@
+# Item 1c: leak-free THSM row for the H3 table (tool-name-only pinning), appended to h3_live.
+name: h3_live
+scenario: { source: generator, generator: { horizon: 400, probe_every: 12 } }
+provider: { name: openrouter, model: openai/gpt-4o-mini, max_tokens: 1024, cache: true, cache_dir: data/cache }
+backend: [ { name: thsm_pintool, params: { aggressiveness: 0.5, cap: 40 } } ]
+writer: { name: llm_typed, every_n: 10 }
+compaction: llm_summary_pinned
+retrieval_k: 8
+seeds: [0, 1, 2, 3, 4]

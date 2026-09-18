@@ -1,0 +1,14 @@
+# Item 1b: freeform vs typed writer on identical scenarios (gpt-4o-mini). Run twice:
+#   --writer llm_freeform --name writer_abl_freeform
+#   --writer llm_typed    --name writer_abl_typed
+name: writer_abl
+scenario: { source: generator, generator: { horizon: 400, probe_every: 12 } }
+provider: { name: openrouter, model: openai/gpt-4o-mini, max_tokens: 1024, cache: true, cache_dir: data/cache }
+backend:
+  - { name: flat_ebbinghaus, params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm,            params: { aggressiveness: 0.5, cap: 40 } }
+  - { name: thsm_nogate,     params: { aggressiveness: 0.5, cap: 40 } }
+writer: { name: llm_freeform, every_n: 10, max_notes: 10 }
+compaction: llm_summary_pinned
+retrieval_k: 8
+seeds: [0, 1, 2, 3, 4]

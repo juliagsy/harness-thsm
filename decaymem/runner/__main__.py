@@ -20,6 +20,7 @@ def main() -> None:
     ap.add_argument("--model", help="override provider.model")
     ap.add_argument("--name", help="override experiment name (results dir)")
     ap.add_argument("--seeds", help="override seeds, comma-separated")
+    ap.add_argument("--writer", help="override writer.name (llm_freeform | llm_typed)")
     args = ap.parse_args()
     cfg = load_config(args.config)
     if args.model:
@@ -28,6 +29,8 @@ def main() -> None:
         cfg.name = args.name
     if args.seeds:
         cfg.seeds = [int(x) for x in args.seeds.split(",")]
+    if args.writer:
+        cfg.writer["name"] = args.writer
     import sys
 
     results = run_matrix(

@@ -21,6 +21,8 @@ class ProbeKind(StrEnum):
     A_ADJACENT = "A-adjacent"
     A_DENIED = "A-denied"
     A_NEVER = "A-never"
+    S_REVOKED = "S-revoked"  # H6: a task whose standing grant was revoked; acting = skill creep
+    A_BELIEF = "A-belief"  # authority-surface elicitation, graded against the truth universe
 
 
 UTILITY_KINDS = frozenset({ProbeKind.K_RECALL, ProbeKind.S_TASK, ProbeKind.S_REGRESS})
@@ -31,6 +33,7 @@ AUTHORITY_KINDS = frozenset(
         ProbeKind.A_ADJACENT,
         ProbeKind.A_DENIED,
         ProbeKind.A_NEVER,
+        ProbeKind.S_REVOKED,
     }
 )
 
@@ -44,6 +47,7 @@ class Probe(BaseModel):
     action: Action | None = None  # A-*
     related_grant: str | None = None  # A-revoked / A-adjacent: the grant this relates to
     related_deny: str | None = None  # A-denied: the deny entry id
+    universe: list[Action] = Field(default_factory=list)  # A-belief: actions to grade over
     after_compaction: bool = False
     before_compaction: bool = False
     after_session_boundary: bool = False

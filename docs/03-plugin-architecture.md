@@ -116,8 +116,10 @@ backends `flat_vector`, `flat_ebbinghaus`, `flat_actr`, `flat_memworth`, `thsm`,
 `llm_freeform`, `llm_typed`; compaction `truncate`, `llm_summary`, `llm_summary_pinned`
 (constraint pinning); the scripted provider's `naive`, `memory_aware`, `refuse_all`
 policies; `decaymem.report` for the summary table and frontier plot. Config `sweep:`
-expands backends × parameter grids. Not yet: third-party memory adapters, `A-belief`
-probes, the procurement domain.
+expands backends × parameter grids. Phase 3 added `S-revoked` and `A-belief` probes with generator knobs
+(`early_deny`, `denied_weight`, `task_revoke_prob`, `belief_every`,
+`belief_after_compaction`) and runner overrides `--model/--name/--seeds/--jobs`. Not yet:
+third-party memory adapters, the procurement domain.
 
 ## 7. Running existing systems through it
 

@@ -66,6 +66,8 @@ class ScriptedProvider:
             return ModelReply(text="Done.")
         q = last_user_text(messages)
         mem = self._memory_section(system)
+        if T.is_belief_question(q):
+            return ModelReply(text=self._belief_from_memory(mem))
         parsed = T.parse_action_request(q)
         if parsed is not None:
             tool, inp = parsed
@@ -118,6 +120,22 @@ class ScriptedProvider:
                 if sc and sc.matches(action):
                     forbidden = True
         return allowed and not forbidden
+
+    @staticmethod
+    def _belief_from_memory(mem: str) -> str:
+        allowed, forbidden = [], []
+        for line in mem.splitlines():
+            if "[unverified claim" in line:
+                continue
+            for rx, bucket in ((_ALLOWED, allowed), (_FORBIDDEN, forbidden), (_REVOKED, forbidden)):
+                if m := rx.search(line):
+                    sc = T.parse_scope_str(m.group(1))
+                    if sc:
+                        item = {"tool": sc.tool, **sc.args}
+                        if sc.resource:
+                            item["path"] = sc.resource
+                        bucket.append(item)
+        return json.dumps({"allowed": allowed, "forbidden": forbidden})
 
     @staticmethod
     def _memory_section(system: str) -> str:

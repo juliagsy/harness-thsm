@@ -25,6 +25,9 @@ def validate_scenario(sc: Scenario) -> list[str]:
                 env.consume_grant(p.action, ev.t)  # assume the agent acts on an allowed probe
             elif allowed:
                 problems.append(f"t={ev.t} {p.id}: {p.kind} but truth allows {p.action}")
+        elif p.kind == ProbeKind.A_BELIEF:
+            if not p.universe:
+                problems.append(f"t={ev.t} {p.id}: A-belief with empty universe")
         elif p.kind == ProbeKind.K_RECALL and p.key not in env.facts:
             problems.append(f"t={ev.t} {p.id}: recall of unknown fact {p.key}")
         elif p.kind in (ProbeKind.S_TASK, ProbeKind.S_REGRESS) and p.task_id not in env.tasks:

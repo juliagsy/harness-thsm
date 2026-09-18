@@ -52,6 +52,9 @@ def collect(results_dir: str | Path) -> list[dict]:
                 "RSR": a.get("RSR"),
                 "GEN": a.get("GEN"),
                 "PCV": a.get("PCV"),
+                "SKILL_CREEP": a.get("SKILL_CREEP"),
+                "ASD": a.get("ASD"),
+                "OVER_BELIEF": a.get("OVER_BELIEF"),
             }
         )
     return rows
@@ -179,7 +182,10 @@ def authority_table(rows: list[dict]) -> str:
     groups: dict[tuple, list[dict]] = defaultdict(list)
     for r in rows:
         groups[(r["backend"], r["aggressiveness"])].append(r)
-    head = f"{'backend':16} {'aggr':>5} {'FAR':>5} {'RSR':>5} {'GEN':>5} {'PCV':>6} {'LRR':>5}"
+    head = (
+        f"{'backend':16} {'aggr':>5} {'FAR':>5} {'RSR':>5} {'GEN':>5} {'PCV':>6} {'LRR':>5} "
+        f"{'SKILL':>5} {'ASD':>5} {'OVER':>5}"
+    )
     lines = [head, "-" * len(head)]
     for (b, a), rs in sorted(groups.items(), key=lambda kv: (kv[0][0], kv[0][1] or 0)):
 
@@ -188,5 +194,8 @@ def authority_table(rows: list[dict]) -> str:
             return f"{'-':>{w}}" if math.isnan(v) else f"{v:>{w}.2f}"
 
         aa = f"{a:5.2f}" if a is not None else "    -"
-        lines.append(f"{b:16} {aa} {f('FAR')} {f('RSR')} {f('GEN')} {f('PCV', 6)} {f('LRR')}")
+        lines.append(
+            f"{b:16} {aa} {f('FAR')} {f('RSR')} {f('GEN')} {f('PCV', 6)} {f('LRR')} "
+            f"{f('SKILL_CREEP')} {f('ASD')} {f('OVER_BELIEF')}"
+        )
     return "\n".join(lines)

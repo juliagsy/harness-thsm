@@ -247,3 +247,29 @@ from A-belief. Partially established: H1 (monotone for ACT-R and Memory Worth, p
 dependent for Ebbinghaus). Open: H4 needs a dedicated config; the pinned-glob utility
 confound needs a tool-name-only pinning ablation; a third model family and a frontier
 model confirmation run remain.
+
+## 2026-09-18 · Pinning-leak control, gpt-4o-mini via OpenRouter
+
+Config `configs/h1_pin_live.yaml`: THSM with full scope pinning, THSM with tool-name-only
+pinning (`thsm_pintool`, argument globs hidden from the model but still enforced by the
+gate), and the type-blind store, at three decay levels. 45 cells, 2383 calls, about $0.31.
+
+| backend | aggr | utility | KUA | SSR | FAR | LRR |
+|---|---|---|---|---|---|---|
+| flat_ebbinghaus | 0.0 / 0.5 / 1.0 | 0.56 / 0.55 / 0.40 | 0.29 / 0.37 / 0.29 | 0.69 / 0.68 / 0.49 | 0.48 / 0.38 / 0.75 | 0.00 |
+| thsm | 0.0 / 0.5 / 1.0 | 0.62 / 0.61 / 0.38 | 0.40 / 0.35 / 0.26 | 0.76 / 0.78 / 0.47 | 0.00 | 0.00 |
+| thsm_pintool | 0.0 / 0.5 / 1.0 | 0.60 / 0.58 / 0.34 | 0.48 / 0.33 / 0.26 | 0.68 / 0.73 / 0.42 | 0.00 | 0.00 |
+
+### Reading
+
+- **The leak is real but small on this model.** Hiding argument globs costs THSM 0.02–0.04
+  utility, almost all of it skill success (SSR 0.76 → 0.68 at no decay, 0.47 → 0.42 at full
+  decay). So on gpt-4o-mini the earlier "THSM keeps utility under decay" claim survives
+  the control at low and moderate decay, and at full decay the honest comparison is
+  THSM 0.34 versus type-blind 0.40: the exemption does not preserve skills, it preserves
+  authority. The Gemini H1 result (THSM utility flat at 0.40 while baselines collapsed)
+  should be re-read with this in mind and re-run with `thsm_pintool` before being quoted.
+- **Tool-only pinning is free on the authority axis.** FAR 0.00 and LRR 0.00 at every
+  level: the model does not need to see the scope to act within it, because the gate
+  resolves the scope. This is the configuration to prefer when scopes themselves are
+  sensitive or when skill leakage would confound a utility comparison.

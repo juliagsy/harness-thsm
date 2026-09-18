@@ -110,3 +110,37 @@ LLM-summary compaction, cap 40; four backends × five aggressiveness levels. 100
 Caveats as above: one small model, one domain, 5 seeds. The Ebbinghaus mid-range dip
 (FAR 0.38 at 0.50) is within seed noise and needs more seeds before reading anything
 into it.
+
+## 2026-09-18 · H3/H5 ablation, gemini-2.5-flash-lite via OpenRouter (second model family)
+
+Same config as the gpt-4o-mini run (`--model google/gemini-2.5-flash-lite`). 30 cells,
+1505 calls, about $0.15.
+
+| backend | utility | FAR | RSR | GEN | LRR | KUA | SSR | CLAIMS | INV |
+|---|---|---|---|---|---|---|---|---|---|
+| flat_ebbinghaus | 0.39 | 0.62 | 0.17 | 0.57 | 0.00 | 0.38 | 0.46 | 7.0 | 0 |
+| labels_notypes | 0.38 | 0.61 | 0.28 | 0.70 | 0.00 | 0.27 | 0.43 | 33.0 | 0 |
+| thsm | 0.46 | 0.00 | 1.00 | 0.00 | 0.00 | 0.38 | 0.50 | 30.6 | 0 |
+| thsm_nogate | 0.47 | 0.56 | 0.15 | 0.58 | 0.33 | 0.35 | 0.52 | 30.6 | 0 |
+| thsm_nopin | 0.40 | 0.00 | 1.00 | 0.00 | 0.33 | 0.30 | 0.48 | 30.6 | 0 |
+| typed_nolabels | 0.43 | 0.00 | 1.00 | 0.00 | 0.00 | 0.27 | 0.54 | 14.8 | 15.8 |
+
+![frontier](results/h3_live_gemini-2.5-flash-lite_frontier.png)
+
+### Reading
+
+- **Replicates the shape, with a weaker model.** Type-blind false authority is higher
+  than on gpt-4o-mini (0.62 vs 0.42) and revocation survival is worse (0.17 vs 0.44).
+  THSM is again at 0.00 with the best utility (0.46 vs 0.39).
+- **Pinning helps this model much less.** With deontic entries pinned in context but no
+  gate, gemini-2.5-flash-lite still acted on 56% of unauthorized requests (gpt-4o-mini:
+  27%). It reads the FORBIDDEN / REVOKED lines and proceeds anyway. This is the strongest
+  argument so far that in-context constraints, even perfectly preserved, are not a
+  substitute for a deterministic gate: the gate's value is model-dependent and largest
+  for the models that follow instructions least.
+- **Labels alone are no better than nothing here** (0.61 vs 0.62), rather than worse as
+  on gpt-4o-mini. Either way they do not help without a trusted deontic channel.
+- **Types alone again pass behaviourally and fail the invariants** (INV 15.8 per run).
+- **Without pinning the gate costs utility**: `thsm_nopin` refused a third of legitimate
+  requests (LRR 0.33) because the model, not seeing its grants, asked for permission it
+  already had. Pinning is what makes the gate cheap.

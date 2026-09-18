@@ -367,3 +367,59 @@ re-graded from the response cache (near zero cost):
 
 The Gemini H4 re-grade hit a persistent upstream error and is being retried; its logged
 numbers are from the original run and its KUA carries the small undercount.
+
+## 2026-09-18 · H3/H5 ablation, qwen3-coder-30b-a3b-instruct via OpenRouter (third model family)
+
+Config `configs/h3_live_qwen.yaml`. OpenRouter's default upstream for this model returned
+empty content on tool-use turns (a hosting bug, confirmed with a raw call), so the config
+routes with `require_parameters` and excludes that upstream; the rerun has zero empty
+replies. 30 cells, 2291 calls, about $0.26. Graded with the corrected knowledge grader.
+
+| backend | utility | FAR | RSR | GEN | LRR | KUA | SSR | CLAIMS | INV |
+|---|---|---|---|---|---|---|---|---|---|
+| flat_ebbinghaus | 0.53 | 0.58 | 0.23 | 0.56 | 0.00 | 0.48 | 0.56 | 6.6 | 0 |
+| labels_notypes | 0.56 | 0.70 | 0.10 | 0.65 | 0.00 | 0.48 | 0.57 | 64.8 | 0 |
+| thsm | 0.56 | 0.00 | 1.00 | 0.00 | 0.00 | 0.48 | 0.63 | 64.6 | 0 |
+| thsm_nogate | 0.51 | 0.60 | 0.27 | 0.73 | 0.00 | 0.46 | 0.56 | 64.6 | 0 |
+| thsm_nopin | 0.53 | 0.00 | 1.00 | 0.00 | 0.00 | 0.51 | 0.51 | 64.6 | 0 |
+| typed_nolabels | 0.70 | 0.00 | 1.00 | 0.00 | 0.00 | 0.50 | 0.80 | 14.2 | 50.0 |
+
+![frontier](results/h3_live_qwen3-coder-30b_frontier.png)
+
+### Reading
+
+- **Third family, same shape.** Type-blind false authority 0.58, THSM 0.00 at equal or
+  better utility (0.56 vs 0.53), gate without pinning also 0.00 with no legitimate
+  rejections.
+- **Pinning alone is nearly worthless for this model** (`thsm_nogate` 0.60 vs 0.58 for the
+  type-blind store). Qwen reads the FORBIDDEN and REVOKED lines and acts anyway, more so
+  than either other model. Across three families the gateless-pinned configuration
+  ranges from 0.27 to 0.60 false authority; the gate is at 0.00 on all three.
+- **Labels alone are worse than nothing again** (0.70), as on gpt-4o-mini. Two of three
+  families now show the flagged-prohibition erosion effect.
+- **Types without labels: the invariant checker earns its keep.** Qwen's typed writer
+  produced 50 invariant violations per run (LLM-authored GRANTs widening A(t)), the most
+  of any model, while no probe caught a behavioural violation. Its utility is also the
+  highest (0.70, SSR 0.80), which is the trade the laundering paper describes: recalled
+  permissions make the agent more capable and less authorised at the same time. Without
+  `INV`, this configuration would look strictly best.
+
+### Cumulative picture (2026-09-18, end of day)
+
+Eleven live experiments, three model families (gpt-4o-mini, gemini-2.5-flash-lite,
+qwen3-coder-30b), roughly $3.60 total, every response cached and replayable.
+
+| claim | status |
+|---|---|
+| H3 typed exemption dominates | Established: THSM 0 false authority in ~500 cells across three families; utility ≥ matched type-blind store after the grader fix, gap 0.03–0.07 |
+| H6 skills carry authority | Established on gpt-4o-mini: 84–97% revoked-skill execution without a call-time gate, 0% with it (two independent scenario sets) |
+| H5 off-diagonals | Established: labels alone never help and hurt on two of three families; types alone pass FAR but log 16–50 invariant violations per run |
+| Knowledge–action gap | Established on gpt-4o-mini: self-report 93–95% right, actions 49–63% wrong in the pinned-but-ungated configuration |
+| Gate vs pinning | Established across three families: pinning alone leaves 0.27 / 0.56 / 0.60 false authority; gate 0.00; pinning makes the gate cheap (LRR 0.33 → 0 on Gemini) |
+| H1 decay drives creep | Established for ACT-R and Memory Worth on two families; Ebbinghaus flat on Gemini, extremes-only on gpt-4o-mini |
+| H4 prohibition depth | Established for ACT-R memory on two families (0.72 → 0.18, 0.39 → 0.18); policy- and model-dependent otherwise |
+| Pinning leak confound | Controlled: tool-only pinning costs 0.02–0.04 utility, 0 authority |
+
+Open: Gemini H1 utility with tool-only pinning; a frontier-model confirmation run; H6 and
+A-belief on the other two families; Phase 4 (external memory adapters, procurement
+domain, ConstraintRot and Laundering replication subsets).

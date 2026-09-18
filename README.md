@@ -23,10 +23,12 @@ H3/H5 ablation and the H1 decay sweep both ran end to end for under a dollar. TH
 authority fidelity at 1.00 at every decay level while type-blind stores creep from about
 0.50 false authority with no decay to 0.75–0.83 at full decay; the labels-only ablation
 was the worst configuration because flagging all permission notes erodes the
-prohibitions too. Phase 3 has since run a second model family (gemini-2.5-flash-lite) and the H4/H6/A-belief
-config: seven live experiments, ~$2.10, THSM at zero false authority in 300 cells, revoked
-skills executed 92–97% of the time by every configuration without a call-time gate, and
-a measured knowledge–action gap (self-reported authority 95% correct, actions 49% wrong). Read the docs in order.
+prohibitions too. Phase 3 has run eleven live experiments across three model families (gpt-4o-mini,
+gemini-2.5-flash-lite, qwen3-coder-30b) for about $3.60: THSM at zero false authority in
+roughly 500 cells with equal or better utility; pinned constraints alone leave 27–60%
+false authority depending on the model; revoked skills are executed 84–97% of the time
+without a call-time gate; and the belief probe shows models stating the authority state
+correctly while acting against it. Details and open items in the results log. Read the docs in order.
 
 Dev: `uv sync` then `uv run pytest`; lint with `uv run ruff check .`.
 Run: `uv run python -m decaymem.runner --config configs/<name>.yaml`, then

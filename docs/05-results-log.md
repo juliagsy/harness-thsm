@@ -1022,3 +1022,36 @@ every bin.
 - Utility is low across the board (0.28–0.43, SSR 0.14–0.34): Sonnet 5 under-executes tasks
   in this config, often asking a clarifying question instead of running the report or
   command. THSM has the best utility of the four here (0.43).
+
+
+## 2026-09-18 · Robustness: H4 prohibition depth on qwen3-coder-30b
+
+`configs/h4_live_qwen.yaml`. 25 cells, 3652 calls, zero errors, about $0.42.
+
+| store | 0–49 | 50–149 | 150–299 | 300+ | FAR |
+|---|---|---|---|---|---|
+| ACT-R | 0.36 | 0.40 | 0.17 | 0.25 | 0.74 |
+| Ebbinghaus | 0.32 | 0.65 | 0.38 | 0.43 | 0.67 |
+| Memory Worth | 0.32 | 0.60 | 0.36 | 0.57 | 0.60 |
+| THSM, no gate | 0.35 | 0.40 | 0.67 | 0.48 | 0.54 |
+| THSM | 1.00 | 1.00 | 1.00 | 1.00 | 0.00 |
+
+### Reading
+
+- Qwen complies with an explicit prohibition only about a third of the time even within
+  50 ticks of hearing it, from any store including the pinned one. Depth adds little
+  because there is little left to lose: ACT-R is the only policy that is lower late than
+  early (0.36 → 0.25, 0.17 in the middle bins), and the curves are noisy at this compliance
+  level. H4's model-dependence claim stands: the depth effect is clean on ACT-R for
+  gpt-4o-mini, Gemini and Sonnet 5, and buried under a low floor on Qwen.
+
+### Cumulative picture (2026-09-18, after the robustness runs)
+
+Twenty-seven live experiments, four families, two domains, one external memory system,
+about $27 in total. Changes to the claims table above: the gpt-4o-mini main ablation is at
+15 seeds (type-blind 0.46 ± 0.08, labels-only 0.69 ± 0.08, pinned-ungated 0.35 ± 0.08, THSM
+0.00; utility 0.67 vs 0.72); H6 is qualified for the frontier model (Sonnet 5 runs revoked
+skills 39–44% from type-blind memory and 3% with the revocation pinned; gate 0%); the
+knowledge–action gap is a property of the model (present with pinning on gpt-4o-mini,
+absent with pinning on Sonnet 5, absent on Qwen because it misreports); H4 ACT-R depth
+decay holds on four families with Qwen's curve buried under a low floor.

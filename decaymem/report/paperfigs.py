@@ -302,7 +302,11 @@ def make_all(
         "fig3_frontier",
     )
     paths += fig_depth(
-        {"gpt-4o-mini": "h4_live", "gemini-2.5-flash-lite": "h4_live_gemini"},
+        {
+            "gpt-4o-mini": "h4_live",
+            "gemini-2.5-flash-lite": "h4_live_gemini",
+            "qwen3-coder-30b": "h4_live_qwen",
+        },
         out,
         "Prohibition compliance decays with depth for time-based memory",
         "fig4_depth",

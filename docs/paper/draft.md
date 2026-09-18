@@ -1,6 +1,6 @@
 # Decay Without Creep: Typed Harness State for Agents That Forget Knowledge but Not Authority
 
-*Draft v0.2, 2026-09-18 (second pass: citations, vector figures, body tables condensed; assumes a 9-page main text with appendices). Authors: [to be filled]. Code, configs, cached model responses and
+*Draft v0.3, 2026-09-18 (third pass: robustness runs folded in; citations, vector figures, body tables condensed; assumes a 9-page main text with appendices). Authors: [to be filled]. Code, configs, cached model responses and
 per-probe records: `decay-mem` repository (local).*
 
 ## Abstract
@@ -18,15 +18,16 @@ state changes only through provenance-backed principal events and is enforced by
 deterministic gate. Six checkable invariants make laundering a structural error rather than a
 behavioural one. We introduce a dual benchmark that scores any memory configuration on a
 utility axis and an authority axis over the same event-sourced scenarios, with the
-authority axis graded from tool calls only. Across 24 live experiments, four model families
+authority axis graded from tool calls only. Across 27 live experiments, four model families
 (gpt-4o-mini, gemini-2.5-flash-lite, qwen3-coder-30b, claude-sonnet-5), two domains and
 about 800 THSM cells, THSM produced zero false authority at utility within ±0.05 of matched
 type-blind stores, while type-blind memory carried out 27–84% of unauthorized requests
 depending on model and decay level. Three findings go beyond the headline: (i) pinning the
 deontic state into context every turn, perfectly preserved, still leaves 20–60% false
 authority, and models restate the authority state correctly (92–95%) while acting against
-it; (ii) skills carry authority: a task whose grant was revoked is still executed 66–97% of
-the time by every configuration without a call-time gate; (iii) integrity labels without a
+it; (ii) skills carry authority: a task whose grant was revoked is still executed 39–97% of
+the time from type-blind memory on every model, and 66–92% even with the revocation pinned
+on the three smaller models (3% on claude-sonnet-5); (iii) integrity labels without a
 trusted deontic channel make things worse, because flagging every permission note as
 unverified erodes the prohibitions too. We also reproduce, in a persistent-memory setting,
 two recent in-context results: constraint erosion with depth for ACT-R-style decay, and the
@@ -228,7 +229,7 @@ retrieval of 8 notes, LLM-summary compaction with permission lines pinned, decay
 aggressiveness 0.5, store cap 40. Models: openai/gpt-4o-mini (primary),
 google/gemini-2.5-flash-lite, qwen/qwen3-coder-30b-a3b-instruct (routed away from an
 upstream that returned empty tool-use content), anthropic/claude-sonnet-5 (frontier
-confirmation). 23 live experiments, 782 model-backed cells, 49.7k model calls, about $17.
+confirmation). 27 live experiments, about 1,000 model-backed cells, roughly 60k model calls, about $27.
 
 A scripted deterministic agent exists for zero-cost pipeline checks; none of the reported
 numbers come from it.
@@ -237,13 +238,14 @@ numbers come from it.
 
 ### 6.1 Main ablation: four model families, two domains
 
-Table 1. False authority (FAR) and utility for the main stores, five seeds each. The full
+Table 1. False authority (FAR) and utility for the main stores, five seeds each unless
+noted (± = 95% interval over seeds). The full
 ablation with revocation survival, generalization, legitimate rejections and invariant
 counts is Table C1.
 
 | model / domain | type-blind FAR | labels-only FAR | pinned, no gate FAR | THSM FAR | utility: type-blind → THSM |
 |---|---|---|---|---|---|
-| gpt-4o-mini / coding | 0.40 | 0.68 | 0.27 | 0.00 | 0.70 → 0.73 |
+| gpt-4o-mini / coding (15 seeds) | 0.46 ± 0.08 | 0.69 ± 0.08 | 0.35 ± 0.08 | 0.00 | 0.67 → 0.72 |
 | gemini-2.5-flash-lite / coding | 0.62 | 0.61 | 0.55 | 0.00 | 0.40 → 0.46 |
 | qwen3-coder-30b / coding | 0.58 | 0.70 | 0.60 | 0.00 | 0.53 → 0.56 |
 | claude-sonnet-5 / coding | 0.27 | 0.45 | 0.22 | 0.00 | 0.55 → 0.56 |
@@ -258,20 +260,20 @@ full ablation with utility and invariant counts is Table C1 in the appendix).*
 Four regularities hold across every family and both domains.
 
 *The typed exemption dominates (H3).* THSM is at zero false authority everywhere, at utility
-within ±0.05 of the matched type-blind store (0.73 vs 0.70, 0.46 vs 0.40, 0.56 vs 0.53,
-0.56 vs 0.55, 0.74 vs 0.74). With argument globs hidden from the model (tool-only pinning)
+equal to or above the matched type-blind store (0.72 vs 0.67 at 15 seeds, 0.46 vs 0.40, 0.56
+vs 0.53, 0.56 vs 0.55, 0.74 vs 0.74). With argument globs hidden from the model (tool-only pinning)
 utility is 0.65, so we do not claim a utility lead; we claim no utility cost within the
 resolution of five seeds.
 
 *The gate does the work; pinning helps but does not suffice.* With deontic entries pinned
-into context every turn and no gate, false authority is 0.27 / 0.55 / 0.60 / 0.22 / 0.20
+into context every turn and no gate, false authority is 0.35 / 0.55 / 0.60 / 0.22 / 0.20
 across the five rows. Pinning cut creep relative to the type-blind store on gpt-4o-mini and
-Sonnet 5 (0.40 → 0.27, 0.27 → 0.22) and barely at all on Gemini and Qwen (0.62 → 0.55, 0.58
+Sonnet 5 (0.46 → 0.35, 0.27 → 0.22) and barely at all on Gemini and Qwen (0.62 → 0.55, 0.58
 → 0.60). The gate is what removes it, and its value is largest for the models that follow
 in-context constraints least.
 
 *Labels without a deontic channel hurt (H5, off-diagonal).* Flagging deontic-looking notes
-as unverified made false authority worse in five of six comparisons (0.40 → 0.68, 0.58 →
+as unverified made false authority worse in five of six comparisons (0.46 → 0.69, 0.58 →
 0.70, 0.27 → 0.45, 0.29 → 0.41; Gemini unchanged), and halved revocation survival on Sonnet
 5 (0.87 → 0.47). With one note type there is no trusted channel for the *real* permissions,
 so the prohibitions arrive flagged too, and the model discounts them.
@@ -340,30 +342,40 @@ action universe on which the agent's self-reported allowed/forbidden set disagre
 | qwen3-coder-30b / coding | type-blind | 0.67 / 0.65 | 0.88 / 0.82 | 0.18 / 0.16 | 0.16 / 0.12 |
 | | THSM, no gate | 0.62 | 0.66 | 0.24 | 0.21 |
 | | **THSM** | 0.00 | **0.00** | 0.17 | 0.16 |
+| claude-sonnet-5 / coding | type-blind (ACT-R / Ebbinghaus) | 0.39 / 0.18 | 0.44 / 0.39 | 0.08 / 0.06 | 0.06 / 0.04 |
+| | THSM, no gate | 0.04 | **0.03** | 0.02 | 0.01 |
+| | **THSM** | 0.00 | **0.00** | 0.01 | 0.01 |
 | gpt-4o-mini / procurement | type-blind | 0.66 / 0.52 | 0.93 / 0.93 | 0.08 / 0.08 | 0.00 / 0.00 |
 | | THSM, no gate | 0.39 | 0.91 | 0.08 | 0.01 |
 | | **THSM** | 0.00 | **0.00** | 0.08 | 0.01 |
 
 *Skills carry authority.* When the user asked for a task whose standing grant had been
-withdrawn, every configuration without a call-time gate ran it 66–93% of the time,
-including THSM with the REVOKED line pinned in context. Only resolving authority at call
-time against the deontic store stopped it. This is H6 across three families and six
-scenario sets: a skill learned under one grant is executed later under none, unless the
-harness strips authority from the skill.
+withdrawn, the three smaller models ran it 66–93% of the time from every configuration
+without a call-time gate, including THSM with the REVOKED line pinned in context.
+claude-sonnet-5 qualifies the claim: from type-blind memory it still ran the revoked skill
+39–44% of the time, but with the revocation pinned only 3%. A revocation the model must
+recall from prose is not binding on any model; a revocation re-presented every turn is
+binding on the strongest model and not on the others. Only call-time resolution against the
+deontic store is at 0% on all four. A skill learned under one grant is executed later under
+none, unless the harness strips authority from the skill or the model is strong enough to
+honour a pinned revocation.
 
 *The knowledge–action gap.* In the procurement domain gpt-4o-mini's self-reported authority
 was 92% correct for every store, with no over-belief at all, and it still carried out 52–66%
 of unauthorized requests from type-blind memory and 39% with the deontic state pinned. In
 the coding domain the pinned configuration was 93% correct in self-report and 57% wrong in
 action. The model is not confused about what it may do; it does it anyway when asked. The
-gap is narrower on Gemini, whose self-report is also poorer, and absent on Qwen, which
-misreports even pinned state (ASD 0.17 with THSM). The gate is indifferent to which failure
-a model has.
+gap is narrower on Gemini, whose self-report is also poorer; absent on Qwen, which
+misreports even pinned state (ASD 0.17 with THSM); and confined to type-blind memory on
+Sonnet 5, which reports accurately for every store (ASD 0.01–0.08) and complies once the
+state is pinned. The gap is a property of the model. The gate is indifferent to which
+failure a model has.
 
 ### 6.4 Prohibitions decay with depth (H4)
 
 Table 4. Compliance with an explicit "never do X" as a function of ticks since the DENY,
-pooled over five seeds (three early denies, A-denied probes weighted 6×).
+pooled over five seeds (three early denies, A-denied probes weighted 6×; the Sonnet 5 rows
+come from the H6/belief config with one early deny).
 
 | model | store | 0–49 | 50–149 | 150–299 | 300+ |
 |---|---|---|---|---|---|
@@ -377,13 +389,22 @@ pooled over five seeds (three early denies, A-denied probes weighted 6×).
 | | Memory Worth | 0.44 | 0.37 | 0.38 | 0.41 |
 | | THSM, no gate | 0.78 | 0.62 | 0.60 | 0.52 |
 | | THSM | 1.00 | 1.00 | 1.00 | 1.00 |
+| qwen3-coder-30b | ACT-R | 0.36 | 0.40 | 0.17 | 0.25 |
+| | Ebbinghaus | 0.32 | 0.65 | 0.38 | 0.43 |
+| | Memory Worth | 0.32 | 0.60 | 0.36 | 0.57 |
+| | THSM, no gate | 0.35 | 0.40 | 0.67 | 0.48 |
+| | THSM | 1.00 | 1.00 | 1.00 | 1.00 |
+| claude-sonnet-5 | ACT-R | 1.00 | 0.73 | 0.70 | 0.44 |
+| | Ebbinghaus, Memory Worth, THSM (gated or not) | 1.00 | 1.00 | 1.00 | 1.00 |
 
 ![](figures/fig4_depth.pdf)
 
-*Figure 4. Prohibition compliance by depth since the DENY, two models.*
+*Figure 4. Prohibition compliance by depth since the DENY, three models.*
 
-ACT-R memory produces a clean depth curve on both models (0.72 → 0.18, 0.39 → 0.12): the
-persistent-memory analogue of in-context omission-constraint decay. Ebbinghaus, which
+ACT-R memory produces a clean depth curve on gpt-4o-mini, Gemini and Sonnet 5 (0.72 → 0.18,
+0.39 → 0.12, 1.00 → 0.44): the persistent-memory analogue of in-context omission-constraint
+decay. On Qwen the effect is buried under a floor: it complies with a fresh prohibition only
+about a third of the time from any store, so there is little left to decay. Ebbinghaus, which
 reinforces on access, holds better on gpt-4o-mini and not on Gemini; Memory Worth is
 non-monotone. Where the prohibition is re-pinned every turn, depth decay is a property of
 the model (Gemini 0.78 → 0.52, gpt-4o-mini flat). The gate removes the depth dependence
@@ -473,7 +494,8 @@ types-only ablation would have looked strictly best.
 
 Small models dominate the evidence; one frontier model was run on one experiment. Two
 synthetic domains with deterministic tools; real harness traces would add realism and lose
-ground truth. Five seeds per cell for most tables; the decay sweep has fifteen. Depth bins
+ground truth. Five seeds per cell for most tables; the decay sweep and the gpt-4o-mini main ablation
+have fifteen. Depth bins
 in §6.4 hold 9–22 probe buckets. The belief probe depends on parsing model output; parse
 rates were 100% on gpt-4o-mini and Sonnet 5, 77% on Qwen and 59% on Gemini after a tolerant
 parser, and unparsed replies count as believing nothing is allowed. OpenRouter upstreams
@@ -551,13 +573,13 @@ KUA, SSR and 1−REGRESS; INV = invariant violations per run. Five seeds each.
 
 | model / domain | store | FAR | RSR | GEN | LRR | utility | INV |
 |---|---|---|---|---|---|---|---|
-| gpt-4o-mini / coding | type-blind (Ebbinghaus) | 0.40 | 0.44 | 0.42 | 0.33 | 0.70 | 0 |
-| | labels only | 0.68 | 0.23 | 0.63 | 0.00 | 0.73 | 0 |
-| | types only | 0.00 | 1.00 | 0.00 | 0.00 | 0.79 | 16.2 |
-| | THSM, no gate | 0.27 | 0.90 | 0.27 | 0.00 | 0.75 | 0 |
-| | THSM, no pinning | 0.00 | 1.00 | 0.00 | 0.00 | 0.73 | 0 |
-| | THSM, tool-only pinning | 0.00 | 1.00 | 0.00 | 0.00 | 0.65 | 0 |
-| | **THSM** | **0.00** | 1.00 | 0.00 | 0.00 | 0.73 | 0 |
+| gpt-4o-mini / coding (15 seeds) | type-blind (Ebbinghaus) | 0.46 | 0.47 | 0.50 | 0.12 | 0.67 | 0 |
+| | labels only | 0.69 | 0.25 | 0.68 | 0.00 | 0.72 | 0 |
+| | types only | 0.00 | 1.00 | 0.00 | 0.00 | 0.73 | 17.3 |
+| | THSM, no gate | 0.35 | 0.82 | 0.40 | 0.00 | 0.72 | 0 |
+| | THSM, no pinning | 0.00 | 1.00 | 0.00 | 0.00 | 0.69 | 0 |
+| | THSM, tool-only pinning (5 seeds) | 0.00 | 1.00 | 0.00 | 0.00 | 0.65 | 0 |
+| | **THSM** | **0.00** | 1.00 | 0.00 | 0.00 | 0.72 | 0 |
 | gemini-2.5-flash-lite / coding | type-blind | 0.62 | 0.17 | 0.57 | 0.00 | 0.40 | 0 |
 | | labels only | 0.61 | 0.28 | 0.70 | 0.00 | 0.38 | 0 |
 | | types only | 0.00 | 1.00 | 0.00 | 0.00 | 0.43 | 15.8 |

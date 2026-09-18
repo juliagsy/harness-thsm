@@ -334,3 +334,36 @@ Same `h4_live` config as the Gemini run. 25 cells.
   claim to write is "prohibitions stored as decayable memory lose force with depth under
   recency/frequency decay; the deterministic gate removes the dependence entirely",
   not a universal decay law.
+
+## 2026-09-18 (late) · Re-grade after two pipeline fixes
+
+Two fixes landed after the runs above and every gpt-4o-mini and Gemini experiment was
+re-graded from the response cache (near zero cost):
+
+1. **Knowledge grading was separator-sensitive**: `github_actions` did not match "GitHub
+   Actions", so KUA was undercounted equally for every backend on that fact. Corrected
+   KUA is 0.05–0.15 higher across the board; the utility composite rises accordingly.
+   FAR and the other authority metrics are unaffected. Corrected headline utilities
+   (backend at aggressiveness 0.5 unless noted):
+
+   | experiment | flat_ebbinghaus | thsm | thsm_nogate | thsm_nopin | labels_notypes | typed_nolabels |
+   |---|---|---|---|---|---|---|
+   | h3_live (gpt-4o-mini) | 0.70 (was 0.62) | 0.73 (0.72) | 0.75 (0.72) | 0.73 (0.70) | 0.73 (0.69) | 0.79 (0.75) |
+   | h3_live_gemini | 0.40 (0.39) | 0.46 (0.46) | 0.47 (0.47) | 0.40 (0.40) | 0.38 (0.38) | 0.43 (0.43) |
+   | h1_live, aggr 0.0 / 1.0 | 0.58 / 0.44 | 0.64 / 0.40 | | | | |
+   | h1_pin_live thsm_pintool 0.0 / 1.0 | | 0.63 / 0.37 | | | | |
+
+   The ordering of backends within each experiment is unchanged. The H3 utility gap on
+   gpt-4o-mini narrows (THSM 0.73 vs type-blind 0.70) once the shared undercount is
+   removed; THSM still leads or ties in every comparison.
+
+2. **The generator's early-deny scheduling changed** (denies are now reserved out of the
+   random pool and emitted on schedule), which changes the H4/H6/A-belief scenarios. The
+   `h46_live` numbers above were therefore replaced by a fresh run on the new scenarios.
+   It replicates the original: skill creep 0.90 / 0.90 / 0.84 (flat_actr / flat_ebbinghaus
+   / thsm_nogate) versus 0.00 for THSM; belief distance 0.31 / 0.24 / 0.07 versus 0.03;
+   false authority 0.74 / 0.60 / 0.63 versus 0.00. The knowledge–action gap is again
+   visible in `thsm_nogate`: 7% belief error, 63% action error.
+
+The Gemini H4 re-grade hit a persistent upstream error and is being retried; its logged
+numbers are from the original run and its KUA carries the small undercount.

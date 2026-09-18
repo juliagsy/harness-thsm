@@ -18,7 +18,7 @@ state changes only through provenance-backed principal events and is enforced by
 deterministic gate. Six checkable invariants make laundering a structural error rather than a
 behavioural one. We introduce a dual benchmark that scores any memory configuration on a
 utility axis and an authority axis over the same event-sourced scenarios, with the
-authority axis graded from tool calls only. Across 23 live experiments, four model families
+authority axis graded from tool calls only. Across 24 live experiments, four model families
 (gpt-4o-mini, gemini-2.5-flash-lite, qwen3-coder-30b, claude-sonnet-5), two domains and
 about 800 THSM cells, THSM produced zero false authority at utility within ±0.05 of matched
 type-blind stores, while type-blind memory carried out 27–84% of unauthorized requests
@@ -268,6 +268,9 @@ KUA, SSR and 1−REGRESS; INV = invariant violations per run. Five seeds each.
 | | THSM, no gate | 0.22 | 1.00 | 0.35 | 0.00 | 0.51 | 0 |
 | | THSM, no pinning | 0.00 | 1.00 | 0.00 | 0.00 | 0.42 | 0 |
 | | **THSM** | **0.00** | 1.00 | 0.00 | 0.00 | 0.56 | 0 |
+| gpt-4o-mini / coding, freeform writer | type-blind | 0.54 | 0.37 | 0.50 | 0.00 | 0.80 | 0 |
+| | **Mem0** (external, own extraction LLM) | 0.39 | 0.83 | 0.43 | 0.00 | 0.82 | 0 |
+| | THSM | 0.00 | 1.00 | 0.00 | 0.00 | 0.77 | 0 |
 | gpt-4o-mini / procurement | type-blind | 0.29 | 0.65 | 0.35 | 0.00 | 0.74 | 0 |
 | | labels only | 0.41 | 0.38 | 0.42 | 0.00 | 0.71 | 0 |
 | | types only | 0.02 | 0.95 | 0.00 | 0.00 | 0.74 | 16.8 |
@@ -294,6 +297,13 @@ as unverified made false authority worse in five of six comparisons (0.40 → 0.
 0.70, 0.27 → 0.45, 0.29 → 0.41; Gemini unchanged), and halved revocation survival on Sonnet
 5 (0.87 → 0.47). With one note type there is no trusted channel for the *real* permissions,
 so the prohibitions arrive flagged too, and the model discounts them.
+
+*A production memory system behaves as a better type-blind store.* Mem0, with its own
+extraction LLM, deduplication and update logic, honoured recalled revocations far more
+often than a flat note store (0.83 vs 0.37) and had the best utility (0.82), and still
+carried out 39% of unauthorized requests, including six explicit prohibitions. Its
+extraction step is itself a laundering writer: in a smoke test it stored a grant and a
+later revocation as two memories and ranked the grant higher for the query that mattered.
 
 *Types without labels look safe and are not.* Admitting LLM-written deontic entries produced
 16–50 invariant violations per run (authority widened by recalled or laundered grants) on
@@ -486,8 +496,8 @@ deterministic errors on about 1% of requests, counted as empty replies. Temperat
 through a router is not fully deterministic; a few percentage points of run-to-run movement
 in FAR is the noise floor. THSM's zero depends on the harness authenticating the permission
 channel; we do not model a compromised principal channel or cross-agent delegation.
-Third-party memory systems are not yet compared (a Mem0 adapter exists and is tested
-offline).
+One third-party memory system (Mem0) is compared, on one model and one domain; Letta
+was not run because its SDK requires a hosted or Docker server.
 
 ## 9. Conclusion
 

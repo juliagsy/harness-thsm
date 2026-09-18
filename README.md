@@ -29,7 +29,8 @@ prohibitions too. Phases 3 and 4 have run twenty-three live experiments across f
 cells at utility within ±0.05 of type-blind stores; pinned constraints alone leave 20–60%
 false authority; revoked skills are executed 66–97% of the time without a call-time gate;
 models state the authority state correctly and act against it; labels alone hurt; types
-alone violate the invariants; compaction is not the main erosion path once memory persists.
+alone violate the invariants; compaction is not the main erosion path once memory persists; Mem0 as an external store
+sits between the type-blind baseline and THSM (39% false authority).
 Details and open items in the results log. Read the docs in order.
 
 Dev: `uv sync` then `uv run pytest`; lint with `uv run ruff check .`.

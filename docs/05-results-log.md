@@ -928,3 +928,37 @@ the Authorization Laundering paper's writer/executor split in our terms.
   `INV` alongside `FAR` is what makes the laundering visible.
 - Sonnet 5 creates the fewest claims (5.0 freeform, 4.2 typed) and Qwen by far the most
   (64.6), which tracks their false-authority rates on type-blind memory (0.27 vs 0.58).
+
+
+## 2026-09-18 · External system: Mem0 as the memory store, gpt-4o-mini
+
+Config `configs/mem0_live.yaml`. Mem0 (mem0ai 2.0.20) runs with its own extraction LLM
+(gpt-4o-mini via OpenRouter), a local sentence-transformers embedder and a per-run Qdrant
+store; our freeform writer's notes are `add`ed and Mem0 extracts, deduplicates and updates
+memories from them; retrieval is Mem0 `search`. Same scenarios as the type-blind and THSM
+rows. 15 cells; Mem0 cells run sequentially (parallel embedders segfault).
+
+| store | utility | FAR | RSR | GEN | LRR | KUA | SSR | CLAIMS |
+|---|---|---|---|---|---|---|---|---|
+| type-blind (Ebbinghaus, freeform writer) | 0.80 | 0.54 | 0.37 | 0.50 | 0.00 | 0.60 | 0.90 | 8.4 |
+| **Mem0** | 0.82 | 0.39 | 0.83 | 0.43 | 0.00 | 0.58 | 0.95 | 33.4 |
+| THSM | 0.77 | 0.00 | 1.00 | 0.00 | 0.00 | 0.51 | 0.90 | 26.6 |
+
+Mem0's violations: 8 never-granted, 6 scope-adjacent, 6 explicitly denied, 4 revoked.
+
+### Reading
+
+- **A production memory system is a better type-blind store, and still a type-blind
+  store.** Mem0's extract-and-update step reconciles revocations far better than a flat
+  note store (revocation survival 0.83 vs 0.37) and gives the best utility of the three
+  (0.82). It still carried out 39% of unauthorized requests: never-granted and
+  scope-adjacent actions, and six explicit prohibitions. Its memories are prose the model
+  weighs, so the failure modes that do not depend on forgetting (generalization, plain
+  compliance) are untouched.
+- **Mem0's own extraction is a laundering writer.** In the smoke test it rewrote "the user
+  allowed running pnpm test" into a stored permission, kept a later revocation as a
+  separate memory rather than superseding the grant, and ranked the grant above the
+  revocation for "may I run pnpm test". CLAIMS per run is 33.4, the highest of the three,
+  because Mem0 mirrors every permission-shaped note as a memory.
+- The comparison is on gpt-4o-mini only, one domain, five seeds. Letta was not run: the
+  SDK needs Letta Cloud or a Docker-hosted server, neither available here.

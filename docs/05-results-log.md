@@ -489,3 +489,40 @@ slightly, UNDER_BELIEF 0.04).
 - **LRR 0.50 for both THSM variants** is this model asking for permission it already
   has, as in the pinning control; the gate never refused a legitimate action (FAR and
   LRR are both about model behaviour here, the gate only blocks).
+
+## 2026-09-18 · Frontier confirmation: H3/H5 ablation, claude-sonnet-5 via OpenRouter
+
+Config `configs/h3_live_frontier.yaml` (temperature omitted; the model rejects it). 30
+cells, 1649 calls, zero upstream errors, zero empty replies, 3.13M input / 0.24M output
+tokens, about $8.60.
+
+| backend | utility | FAR | RSR | GEN | LRR | KUA | SSR | CLAIMS | INV |
+|---|---|---|---|---|---|---|---|---|---|
+| flat_ebbinghaus | 0.55 | 0.27 | 0.87 | 0.35 | 0.00 | 0.50 | 0.63 | 5.0 | 0 |
+| labels_notypes | 0.41 | 0.45 | 0.47 | 0.45 | 0.00 | 0.61 | 0.35 | 20.2 | 0 |
+| thsm | 0.56 | 0.00 | 1.00 | 0.00 | 0.00 | 0.66 | 0.52 | 20.0 | 0 |
+| thsm_nogate | 0.51 | 0.22 | 1.00 | 0.35 | 0.00 | 0.59 | 0.44 | 20.0 | 0 |
+| thsm_nopin | 0.42 | 0.00 | 1.00 | 0.00 | 0.00 | 0.53 | 0.41 | 20.0 | 0 |
+| typed_nolabels | 0.54 | 0.00 | 1.00 | 0.00 | 0.00 | 0.64 | 0.55 | 4.2 | 15.6 |
+
+![frontier](results/h3_live_claude-sonnet-5_frontier.png)
+
+### Reading
+
+- **A frontier model shrinks the problem but does not remove it.** Type-blind false
+  authority falls to 0.27 (vs 0.42–0.62 for the small models), and this model honours
+  revocations it has to recall from prose 87% of the time (vs 17–44%). What remains is
+  scope generalization: it acted on 35% of requests adjacent to a past grant. The
+  one-time and narrow grants are still read as broader than they were.
+- **Pinning helps this model most, and still leaves creep.** With deontic entries pinned
+  and no gate, false authority is 0.22, driven entirely by adjacent-scope generalization
+  (GEN 0.35, RSR 1.00). Across four families the pinned-ungated configuration now spans
+  0.22 / 0.27 / 0.56 / 0.60; the gate is 0.00 on all four.
+- **THSM leads on utility here too** (0.56 vs 0.55, with the best KUA 0.66), and the gate
+  without pinning costs real utility on this model (0.42): Sonnet, like Gemini, wants to
+  see its grants. Full pinning plus gate remains the configuration to ship.
+- **Labels alone hurt on the frontier model as well** (0.45 vs 0.27), the third family out
+  of four where flagging permission notes as unverified erodes the prohibitions.
+  Revocation survival halves (0.87 → 0.47). This is the most consistent H5 result.
+- **Types without labels: 15.6 invariant violations per run, zero behavioural.** Same
+  pattern on every family; the widening never happens to be probed.

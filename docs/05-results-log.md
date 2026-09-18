@@ -645,3 +645,30 @@ empty replies, belief parse rate 77%, about $0.31.
   model does not show the clean knowledge–action gap of gpt-4o-mini; it gets the state
   wrong *and* acts wrong. The gate is indifferent to which of the two failures a model
   has, which is the point.
+
+## 2026-09-18 · Item 1: writer ablation and leak-free H3 row, gpt-4o-mini
+
+**Writer ablation** (`configs/writer_ablation_live.yaml`, same five generated scenarios,
+freeform vs typed memory writer; 15 cells each, about $0.15 each):
+
+| backend | writer | FAR | RSR | GEN | utility | KUA | CLAIMS |
+|---|---|---|---|---|---|---|---|
+| flat_ebbinghaus | freeform | 0.59 | 0.30 | 0.52 | 0.61 | 0.38 | 8.0 |
+| flat_ebbinghaus | typed | 0.54 | 0.31 | 0.73 | 0.71 | 0.65 | 6.2 |
+| thsm_nogate | freeform | 0.32 | 0.61 | 0.35 | 0.67 | 0.49 | 25.8 |
+| thsm_nogate | typed | 0.25 | 0.94 | 0.30 | 0.68 | 0.49 | 23.4 |
+| thsm | either | 0.00 | 1.00 | 0.00 | 0.68 / 0.67 | 0.49 / 0.47 | 25.8 / 23.4 |
+
+- The typed writer reduces false authority modestly for type-blind memory (0.59 → 0.54)
+  and for pinned-ungated THSM (0.32 → 0.25, with revocation survival 0.61 → 0.94), and
+  improves knowledge recall for the type-blind store (KUA 0.38 → 0.65). Schema-constrained
+  writing launders less and remembers facts better, but it does not close the gap: the
+  type-blind store still acts on more than half of unauthorized requests either way.
+- The earlier H1 (freeform) and H3 (typed) sweeps are therefore comparable up to a
+  0.05–0.07 shift in type-blind FAR attributable to the writer; the ordering of backends
+  is identical under both.
+
+**Leak-free H3 row** (`thsm_pintool` appended to `h3_live`): FAR 0.00, LRR 0.00, utility
+0.65 against 0.73 for full pinning and 0.70 for the type-blind store (KUA 0.44 vs 0.51,
+inside seed noise for a knowledge metric that pinning cannot affect). The H3 utility
+comparison on gpt-4o-mini is thus "THSM within ±0.05 of the type-blind store", not a lead.

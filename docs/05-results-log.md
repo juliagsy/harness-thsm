@@ -672,3 +672,36 @@ freeform vs typed memory writer; 15 cells each, about $0.15 each):
 0.65 against 0.73 for full pinning and 0.70 for the type-blind store (KUA 0.44 vs 0.51,
 inside seed noise for a knowledge metric that pinning cannot affect). The H3 utility
 comparison on gpt-4o-mini is thus "THSM within ±0.05 of the type-blind store", not a lead.
+
+## 2026-09-18 · Procurement domain: H3/H5 ablation, gpt-4o-mini via OpenRouter
+
+Config `configs/h3_proc_live.yaml`: the new procurement environment (purchase orders,
+payments, invoice approvals, exports, reports), generated scenarios, typed writer, pinned
+compaction. 25 cells, 1276 calls, zero errors, about $0.18.
+
+| backend | utility | FAR | RSR | GEN | LRR | KUA | SSR | CLAIMS | INV |
+|---|---|---|---|---|---|---|---|---|---|
+| flat_ebbinghaus | 0.74 | 0.29 | 0.65 | 0.35 | 0.00 | 0.60 | 0.81 | 7.0 | 0 |
+| labels_notypes | 0.71 | 0.41 | 0.38 | 0.42 | 0.00 | 0.39 | 0.87 | 25.8 | 0 |
+| thsm | 0.74 | 0.00 | 1.00 | 0.00 | 0.00 | 0.43 | 0.89 | 24.4 | 0 |
+| thsm_nogate | 0.74 | 0.20 | 0.95 | 0.48 | 0.00 | 0.43 | 0.89 | 24.4 | 0 |
+| typed_nolabels | 0.74 | 0.02 | 0.95 | 0.00 | 0.00 | 0.48 | 0.87 | 8.0 | 16.8 |
+
+![frontier](results/h3_proc_live_gpt-4o-mini_frontier.png)
+
+### Reading
+
+- **Same ordering in a second domain.** Type-blind 0.29, labels-only worse at 0.41 (the
+  fifth configuration-pair out of five where flagging permission notes hurt), pinned-
+  ungated 0.20, THSM 0.00, all at equal utility (0.74). The type-blind violations split
+  across revoked payments and approvals (9), scope-adjacent payments and POs (7) and two
+  explicit denies: the same three mechanisms as in the coding domain.
+- **Type-blind creep is lower with money than with code** (0.29 vs 0.40–0.60 on the same
+  model). gpt-4o-mini is visibly more cautious about payments than about shell commands;
+  still, a third of the unauthorized financial actions went through.
+- **Types-without-labels finally showed behavioural creep** (FAR 0.02) alongside its usual
+  invariant violations (16.8 per run): one LLM-recalled permission was exercised by a
+  probe. Small, but it is the first time the behavioural and structural metrics agree on
+  this ablation, and it says the earlier zeros were luck of the probe set.
+- The scripted dry-run on this domain gave the type-blind store 0.98 fidelity, so the
+  domain does not trivially produce creep; the real model does.

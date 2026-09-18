@@ -1,3 +1,9 @@
-from decaymem.report.frontier import collect, frontier_plot, summary_table
+from decaymem.report.frontier import (
+    authority_table,
+    collect,
+    frontier_plot,
+    pcd_table,
+    summary_table,
+)
 
-__all__ = ["collect", "frontier_plot", "summary_table"]
+__all__ = ["authority_table", "collect", "frontier_plot", "pcd_table", "summary_table"]

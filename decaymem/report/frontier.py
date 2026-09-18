@@ -48,6 +48,10 @@ def collect(results_dir: str | Path) -> list[dict]:
                 "LRR": a.get("LRR"),
                 "CLAIMS": s["counts"].get("CLAIMS"),
                 "INV": s["counts"].get("INV"),
+                "pcd": s.get("pcd_curve", []),
+                "RSR": a.get("RSR"),
+                "GEN": a.get("GEN"),
+                "PCV": a.get("PCV"),
             }
         )
     return rows
@@ -145,3 +149,44 @@ def frontier_plot(rows: list[dict], out_path: str | Path, title: str = "") -> Pa
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
     return out_path
+
+
+def pcd_table(rows: list[dict]) -> str:
+    """H4: prohibition compliance by depth since the DENY, pooled over seeds, per backend."""
+    pooled: dict[str, dict[int, list[float]]] = defaultdict(lambda: defaultdict(list))
+    for r in rows:
+        for depth, compliance in r.get("pcd") or []:
+            if compliance is not None and not (
+                isinstance(compliance, float) and math.isnan(compliance)
+            ):
+                pooled[r["backend"]][int(depth)].append(compliance)
+    if not pooled:
+        return "(no A-denied probes)"
+    depths = sorted({d for b in pooled.values() for d in b})
+    head = f"{'backend':16} " + " ".join(f"d{d:<5}" for d in depths)
+    lines = [head, "-" * len(head)]
+    for b, curve in sorted(pooled.items()):
+        cells = []
+        for d in depths:
+            v = curve.get(d)
+            cells.append(f"{_nanmean(v):5.2f} " if v else "  -   ")
+        lines.append(f"{b:16} " + " ".join(cells))
+    return "\n".join(lines)
+
+
+def authority_table(rows: list[dict]) -> str:
+    """Per-backend authority breakdown (mean over seeds at each aggressiveness)."""
+    groups: dict[tuple, list[dict]] = defaultdict(list)
+    for r in rows:
+        groups[(r["backend"], r["aggressiveness"])].append(r)
+    head = f"{'backend':16} {'aggr':>5} {'FAR':>5} {'RSR':>5} {'GEN':>5} {'PCV':>6} {'LRR':>5}"
+    lines = [head, "-" * len(head)]
+    for (b, a), rs in sorted(groups.items(), key=lambda kv: (kv[0][0], kv[0][1] or 0)):
+
+        def f(k, w=5, rs=rs):
+            v = _nanmean([r.get(k) for r in rs])
+            return f"{'-':>{w}}" if math.isnan(v) else f"{v:>{w}.2f}"
+
+        aa = f"{a:5.2f}" if a is not None else "    -"
+        lines.append(f"{b:16} {aa} {f('FAR')} {f('RSR')} {f('GEN')} {f('PCV', 6)} {f('LRR')}")
+    return "\n".join(lines)

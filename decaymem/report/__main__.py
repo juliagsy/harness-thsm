@@ -1,7 +1,13 @@
 import argparse
 from pathlib import Path
 
-from decaymem.report.frontier import collect, frontier_plot, summary_table
+from decaymem.report.frontier import (
+    authority_table,
+    collect,
+    frontier_plot,
+    pcd_table,
+    summary_table,
+)
 
 
 def main() -> None:
@@ -15,6 +21,10 @@ def main() -> None:
     if not rows:
         raise SystemExit(f"no results under {results}")
     print(summary_table(rows))
+    print()
+    print(authority_table(rows))
+    print()
+    print(pcd_table(rows))
     if not args.no_plot:
         out = frontier_plot(
             rows,

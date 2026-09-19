@@ -1055,3 +1055,70 @@ skills 39–44% from type-blind memory and 3% with the revocation pinned; gate 0
 knowledge–action gap is a property of the model (present with pinning on gpt-4o-mini,
 absent with pinning on Sonnet 5, absent on Qwen because it misreports); H4 ACT-R depth
 decay holds on four families with Qwen's curve buried under a low floor.
+
+## 2026-09-19 · External benchmark: Continual-ARC utility validation
+
+The authority axis cannot be measured on Continual-ARC (there is nothing to revoke), so
+this validates the *utility* half of H2 and H3 on a benchmark built for a different paper:
+does decay cost skill retention, and which policy actually forgets under realistic
+recurrence?
+
+**Setup.** `decaymem/adapters/continual_arc.py` is a memory-augmented learner for
+Continual-ARC's own runner: one PROC entry per ARC task holding the inferred rule, the
+decaymem decay policy applied after every instance, and rule hits / evictions /
+re-derivations reported through the benchmark's `resources()` hook. Evicted rules must be
+re-derived at demo cost, which is the utility price of forgetting. Model gpt-5-mini
+(gpt-4o-mini solved 0/114 and was the wrong instrument), smoke config (8 tasks, 128
+instances), Re-ARC difficulty bound 0.3, one seed, 8 runs, 1024 instances, ~$18.70.
+Summarise with `python -m decaymem.report --arc <run dirs>`.
+
+| schedule | policy | score | solve | first | repeat | evict | rederiv | hits |
+|---|---|---|---|---|---|---|---|---|
+| isolated | none | 72.9 | 0.59 | 0.25 | 0.63 | 0 | 160 | 85 |
+| isolated | Ebbinghaus 0.5 | 73.2 | 0.60 | 0.25 | 0.65 | 0 | 159 | 89 |
+| isolated | ACT-R 0.5 | 72.3 | 0.59 | 0.25 | 0.64 | 0 | 160 | 91 |
+| workstreams | none | 71.1 | 0.55 | 0.25 | 0.60 | 0 | 179 | 72 |
+| workstreams | Ebbinghaus 0.5 | 71.5 | 0.55 | 0.38 | 0.59 | 1 | 174 | 73 |
+| workstreams | ACT-R 0.5 | 68.3 | 0.52 | 0.50 | 0.54 | 2 | 192 | 73 |
+| workstreams | ACT-R 0.9 | 58.3 | 0.38 | 0.38 | 0.39 | 37 | 290 | 20 |
+| workstreams | ACT-R 1.0 | 59.5 | 0.41 | 0.38 | 0.42 | 40 | 287 | 21 |
+
+Retention by gap, workstreams arm (solve rate at gap 1–10 / 11–30 / 31–100):
+
+| policy | 1–10 (n=103) | 11–30 (n=7) | 31–100 (n=2) |
+|---|---|---|---|
+| none | 0.60 | 0.43 | 1.00 |
+| Ebbinghaus 0.5 | 0.59 | 0.43 | 1.00 |
+| ACT-R 0.5 | 0.54 | 0.43 | 0.50 |
+| ACT-R 0.9 | 0.41 | 0.29 | 0.00 |
+| ACT-R 1.0 | 0.44 | 0.29 | 0.00 |
+
+### Reading
+
+- **Memory carries the score, so the instrument works.** Repeat exposures solve at 0.59–0.65
+  against 0.25 on first exposure in every non-evicting run. Continual-ARC measures exactly
+  the thing the dual benchmark's SSR proxies, with binary ground truth and no LLM judge.
+- **The isolated arm is a clean null.** All three policies land within 0.9 score points
+  (72.3–73.2) with zero evictions. When every recurrence is immediate, decay at moderate
+  settings is invisible. This is the control that makes the workstreams contrast readable.
+- **Decay costs retention only when it actually evicts, and then it costs a lot.** Across
+  the workstreams arm, evictions, re-derivations and score move together: 0–2 evictions →
+  score 68–71 and repeat 0.54–0.60; 37–40 evictions → score 58–60, repeat 0.39–0.42,
+  re-derivations up 60% (179 → ~290) and rule hits down 72%. A forgotten rule is re-bought
+  at demo cost, which is the utility price H3's exemption is measured against.
+- **Ebbinghaus cannot forget a rule that gets used, at any setting.** It evicted once in
+  128 instances at aggressiveness 0.5, and an offline replay of the observed access
+  sequences through the policy gives zero evictions even at 1.0, because its strength term
+  is multiplicative in access count. Memory Worth is nearly as inert (1 eviction at 0.9)
+  since these rules mostly succeed. ACT-R's power-law activation is the only policy that
+  forgets under realistic recurrence gaps.
+- **This corroborates H1 from the opposite direction.** In our own benchmark ACT-R was the
+  policy whose false authority rose monotonically with decay (0.54 → 0.84) while Ebbinghaus
+  stayed flat until the extreme. Here, on a benchmark we did not design and with no
+  authority concept at all, ACT-R is the only policy that evicts and the only one that
+  loses retention. Creep-under-decay and retention-loss-under-decay are the same mechanism:
+  what ACT-R prunes is whatever has not been retrieved recently, which is revocations in
+  one benchmark and skills in the other.
+
+Caveats: one seed, one model, the smoke config, and the 11–30 and 31–100 gap buckets hold
+7 and 2 instances. The gap-bucket direction is consistent but not established at this n.

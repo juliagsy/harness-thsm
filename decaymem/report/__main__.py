@@ -17,12 +17,28 @@ def main() -> None:
     ap.add_argument("--root", default="experiments")
     ap.add_argument("--no-plot", action="store_true")
     ap.add_argument(
+        "--arc",
+        nargs="+",
+        metavar="RUN_DIR",
+        help="summarise Continual-ARC memory-learner runs and exit",
+    )
+    ap.add_argument(
         "--laundering",
         nargs="+",
         metavar="EXP",
         help="print the CLAIMS-vs-FAR split across these experiments and exit",
     )
     args = ap.parse_args()
+    if args.arc:
+        from decaymem.report.arc import table
+
+        print(table(args.arc))
+        return
+    if args.arc:
+        from decaymem.report.arc import table
+
+        print(table(args.arc))
+        return
     if args.laundering:
         from decaymem.report.frontier import laundering_table
 

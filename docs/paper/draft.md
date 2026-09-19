@@ -1,6 +1,6 @@
 # Decay Without Creep: Typed Harness State for Agents That Forget Knowledge but Not Authority
 
-*Draft v0.3, 2026-09-18 (third pass: robustness runs folded in; citations, vector figures, body tables condensed; assumes a 9-page main text with appendices). Authors: [to be filled]. Code, configs, cached model responses and
+*Draft v0.4, 2026-09-19 (fourth pass: external-benchmark validation on Continual-ARC; citations, vector figures, body tables condensed; assumes a 9-page main text with appendices). Authors: [to be filled]. Code, configs, cached model responses and
 per-probe records: `decay-mem` repository (local).*
 
 ## Abstract
@@ -31,7 +31,11 @@ on the three smaller models (3% on claude-sonnet-5); (iii) integrity labels with
 trusted deontic channel make things worse, because flagging every permission note as
 unverified erodes the prohibitions too. We also reproduce, in a persistent-memory setting,
 two recent in-context results: constraint erosion with depth for ACT-R-style decay, and the
-limited role of compaction once constraints live in memory.
+limited role of compaction once constraints live in memory. Finally, we validate the
+utility half of the claim on Continual-ARC, a skill-retention benchmark built for a
+different paper: the exemption's cost is bounded by what decay actually evicts, and only
+power-law (ACT-R) activation evicts under realistic recurrence, which is the same policy
+whose false authority rises monotonically with decay in our own benchmark.
 
 ## 1. Introduction
 
@@ -229,7 +233,8 @@ retrieval of 8 notes, LLM-summary compaction with permission lines pinned, decay
 aggressiveness 0.5, store cap 40. Models: openai/gpt-4o-mini (primary),
 google/gemini-2.5-flash-lite, qwen/qwen3-coder-30b-a3b-instruct (routed away from an
 upstream that returned empty tool-use content), anthropic/claude-sonnet-5 (frontier
-confirmation). 27 live experiments, about 1,000 model-backed cells, roughly 60k model calls, about $27.
+confirmation). 27 live experiments on the dual benchmark, about 1,000 model-backed cells, roughly 60k
+model calls, about $27; plus 8 Continual-ARC runs (1024 instances, about $19).
 
 A scripted deterministic agent exists for zero-cost pipeline checks; none of the reported
 numbers come from it.
@@ -447,7 +452,46 @@ Gemini, with authority unchanged at zero. We therefore report THSM's utility as 
 rejections on Gemini and Sonnet 5 (to 0.33–0.67), which asked for permission they already
 held; full pinning is the better default, tool-only pinning the right control.
 
-### 6.7 Authority created versus authority acted on
+### 6.7 External validation on a skill-retention benchmark
+
+Continual-ARC (Hodel-style Re-ARC generators over a lifetime of recurring, drifting tasks)
+has no authority concept, so it cannot test the creep claims; it can test what the
+exemption costs. We wrote a memory-augmented learner for its own runner that stores one
+PROC rule per task, applies our decay policies, and re-derives an evicted rule at demo
+cost. Model gpt-5-mini, smoke config, 8 runs, 1024 instances.
+
+Table 6. Continual-ARC, score and retention. "repeat" is the solve rate on non-first
+exposures; first-exposure solve rate is 0.25–0.50 throughout.
+
+| schedule | policy | score | repeat | evictions | re-derivations | rule hits |
+|---|---|---|---|---|---|---|
+| isolated | none / Ebbinghaus / ACT-R (a=0.5) | 72.9 / 73.2 / 72.3 | 0.63 / 0.65 / 0.64 | 0 / 0 / 0 | 160 / 159 / 160 | 85 / 89 / 91 |
+| workstreams | none | 71.1 | 0.60 | 0 | 179 | 72 |
+| workstreams | Ebbinghaus a=0.5 | 71.5 | 0.59 | 1 | 174 | 73 |
+| workstreams | ACT-R a=0.5 | 68.3 | 0.54 | 2 | 192 | 73 |
+| workstreams | ACT-R a=0.9 | 58.3 | 0.39 | 37 | 290 | 20 |
+| workstreams | ACT-R a=1.0 | 59.5 | 0.42 | 40 | 287 | 21 |
+
+Three things follow. First, memory carries the score: repeat exposures solve at 0.59–0.65
+against 0.25 on first exposure, so the benchmark measures the quantity our SSR proxies,
+with binary ground truth. Second, the isolated schedule is a null (all three policies
+within 0.9 score points, zero evictions): decay is free when recurrence is immediate.
+Third, in the workstreams schedule evictions, re-derivations and score move together, and
+the cost of forgetting is large when forgetting actually happens: 37–40 evictions drop the
+score by 12 points, cut rule reuse by 72% and raise re-derivations by 60%.
+
+The policy asymmetry is the part that speaks to §6.2. Ebbinghaus evicted once in 128
+instances at a=0.5, and replaying the observed access sequences offline through the policy
+gives zero evictions even at a=1.0: its strength term is multiplicative in access count,
+so two or three reuses push the effective time constant past any horizon the schedule
+offers. Memory Worth is nearly as inert here because these rules mostly succeed. ACT-R's
+power-law activation is the only policy that forgets under realistic recurrence gaps — and
+it is the same policy whose false authority rises monotonically with decay aggressiveness
+in Table 2. Creep-under-decay and retention-loss-under-decay are one mechanism observed
+twice: what power-law activation prunes is whatever has not been retrieved recently, which
+is a revocation in one benchmark and a skill in the other.
+
+### 6.8 Authority created versus authority acted on
 
 Every model writes deontic-looking memory: 5–65 claims per run with the typed writer (Sonnet
 5 fewest, Qwen most, tracking their type-blind false authority of 0.27 and 0.58). On THSM
@@ -457,6 +501,14 @@ is a property of the store. Because the widened scopes were rarely probed, behav
 authority under-reports this by construction, which is why `INV` belongs next to `FAR`.
 
 ## 7. Discussion
+
+**What the exemption costs.** The dual benchmark shows the typed exemption costing nothing
+measurable, but it cannot separate "decay was cheap here" from "the exemption was cheap".
+Continual-ARC separates them: decay is free when it evicts nothing and expensive when it
+evicts (12 score points, 72% of rule reuse), and only one of the three policies evicts at
+all under realistic recurrence. The exemption's price is therefore bounded by the eviction
+rate of the policy it protects deontic state from, which is zero for reinforced exponential
+decay and substantial for power-law activation.
 
 **What the gate is and is not.** THSM's zero is by construction: the gate consults a store
 that decay and consolidation cannot touch and that LLM writes cannot widen. The empirical
@@ -493,8 +545,10 @@ types-only ablation would have looked strictly best.
 ## 8. Limitations
 
 Small models dominate the evidence; one frontier model was run on one experiment. Two
-synthetic domains with deterministic tools; real harness traces would add realism and lose
-ground truth. Five seeds per cell for most tables; the decay sweep and the gpt-4o-mini main ablation
+synthetic domains with deterministic tools for the authority axis; real harness traces
+would add realism and lose ground truth. The utility axis is additionally validated on
+Continual-ARC, an external benchmark, but only at its smoke config with one seed and one
+model, and its 11–30 and 31–100 gap buckets hold 7 and 2 instances. Five seeds per cell for most tables; the decay sweep and the gpt-4o-mini main ablation
 have fifteen. Depth bins
 in §6.4 hold 9–22 probe buckets. The belief probe depends on parsing model output; parse
 rates were 100% on gpt-4o-mini and Sonnet 5, 77% on Qwen and 59% on Gemini after a tolerant

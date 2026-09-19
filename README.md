@@ -31,7 +31,10 @@ false authority; revoked skills are executed 39–97% of the time from type-blin
 66–92% even with the revocation pinned on the smaller models (3% on claude-sonnet-5);
 models state the authority state correctly and act against it; labels alone hurt; types
 alone violate the invariants; compaction is not the main erosion path once memory persists; Mem0 as an external store
-sits between the type-blind baseline and THSM (39% false authority).
+sits between the type-blind baseline and THSM (39% false authority). The utility half is
+additionally validated on Continual-ARC, an external skill-retention benchmark: decay is
+free when it evicts nothing and costs 12 score points when it does, and only power-law
+(ACT-R) activation evicts under realistic recurrence.
 Details and open items in the results log. Read the docs in order.
 
 Dev: `uv sync` then `uv run pytest`; lint with `uv run ruff check .`.

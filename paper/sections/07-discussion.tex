@@ -1,0 +1,14 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\textbf{What the exemption costs.} The dual benchmark shows the typed exemption costing nothing measurable, but it cannot separate "decay was cheap here" from "the exemption was cheap". Continual-ARC separates them: decay is free when it evicts nothing and expensive when it evicts (12 score points, 72\% of rule reuse), and only one of the three policies evicts at all under realistic recurrence. The exemption's price is therefore bounded by the eviction rate of the policy it protects deontic state from, which is zero for reinforced exponential decay and substantial for power-law activation.
+
+\textbf{What the gate is and is not.} THSM's zero is by construction: the gate consults a store that decay and consolidation cannot touch and that LLM writes cannot widen. The empirical content of the paper is elsewhere: that the construction costs no measurable utility, that every alternative that keeps authority in the model's hands leaks (including perfect in-context pinning), and that the leak is largest for models that follow instructions least and does not vanish for the strongest model we tried (Sonnet 5, 0.22 with pinning and no gate, driven entirely by scope generalization).
+
+\textbf{Why the knowledge--action gap matters for governance design.} The belief probe shows the failure is not recall. Models restate the constraint and act against it when a plausible request arrives. This is consistent with the in-context finding that prohibitions lose force while requirements hold \citep{gamage2026}: a request is a requirement-shaped pressure, and the prohibition competes with it. It argues against any design that relies on the model \emph{knowing} its permissions, including pinning, re-injection and system-prompt hardening, as anything more than a mitigation.
+
+\textbf{Why labels alone hurt.} Integrity labels are protective only when a trusted channel exists for genuine permissions. Flag everything and the real prohibitions arrive with the same "unverified" tag as the laundered grants; the model discounts them together. The lesson is that labelling and typing are complementary: labels stop laundering only when types give principal-authored deontic entries a place to live unflagged.
+
+\textbf{Skills.} The H6 result is the strongest argument for capability-stripped skills. A skill library that records how to run tests will run them after the user has said stop, in every configuration we tested that lacked call-time authority resolution. Skill lifecycle work (retirement, gating) does not address this; the authority has to be resolved at the call.
+
+\textbf{Metrics.} Three additions to the usual memory benchmark were decisive: grading authority from tool calls only; separating revoked, adjacent, denied, never-granted and skill-driven requests; and reporting invariant violations alongside behaviour. Without \texttt{INV}, the types-only ablation would have looked strictly best.

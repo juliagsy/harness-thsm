@@ -1,0 +1,19 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Coding agents, always-on assistants and multi-agent pipelines now persist state across sessions: instruction files, auto-written memory notes, skill libraries, and permission decisions. Two research communities study what happens to that state over time, and they do not cite each other.
+
+The \emph{decay} literature asks how a memory store should forget. MemoryBank applies Ebbinghaus curves [Zhong et al. 2023]; FadeMem, FSFM and graph-pruning systems modulate decay by relevance, access and age [Wei et al. 2026; Gu et al. 2026; Rusu et al. 2026]; Memory Worth scores entries by co-occurrence with success \citep{simsek2026}; A-MAC gates admission by a content type prior [Zhang et al. 2026]. All of them optimise utility, and none of them exempts any class of memory from forgetting.
+
+The \emph{authority} literature asks how an agent's permissions stay correct. Progent enforces least privilege with a policy language whose updates may narrow automatically but widen only with approval [Shi et al. 2025]. The Authorization Laundering paper shows LLM memory writers fabricate authority for up to 50\% of unauthorized requests under incremental updates, and executors act on it 98.6\% of the time [Cerruti et al. 2026]. Governance Decay shows in-context policies are silently dropped by compaction \citep{chen2026}, and prohibition-type constraints decay in-context while requirement-type ones persist \citep{gamage2026}. None of this work has a decay model, and none looks past a single context window.
+
+The two problems are one mechanism seen from two sides. Decay prunes by recency, frequency or outcome; a prohibition stated once and never retrieved ranks last on all three, and a prohibition that blocks a task co-occurs with failure. Consolidation is how harnesses shrink memory, and it is also where writers generalise grants and drop revocations. If the same operator that keeps knowledge fresh is the one that erodes authority, no tuning of the decay schedule can fix it: the store needs a type system.
+
+\textbf{Contributions.}
+
+\begin{enumerate}
+\item \textbf{THSM}, a typed harness state model with an integrity lattice, an operator table that confines decay and consolidation to knowledge and skills, a deterministic authorization gate over deontic state, and six invariants that make authority creep a checkable property of the store (\S3).
+\item \textbf{A dual benchmark} that grades utility and authority fidelity on the same seeded, event-sourced scenarios, with the authority axis graded from tool calls, a probe set that separates revoked, scope-adjacent, denied, never-granted and skill-driven requests, a belief probe that elicits the agent's own account of its permissions, and a validator that replays every scenario against ground truth before any model call (\S4).
+\item \textbf{A plugin experiment layer} that runs the benchmark against any model behind an OpenAI-compatible or Anthropic endpoint and any memory backend, with content-addressed response caching so every run is replayable and re-gradable at zero cost (\S5).
+\item \textbf{Empirical results} on four model families and two domains (\S6), including the pre-registered hypotheses and three findings we did not anticipate: the knowledge--action gap, skill-borne authority, and the harm of labels without a deontic channel.
+\end{enumerate}

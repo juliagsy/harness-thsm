@@ -1,0 +1,51 @@
+\section{The Typed Harness State Model}
+\label{sec:the-typed-harness-state-mode}
+
+\subsection{Entries}
+
+Harness state is a set of entries e = $\langle$id, $\tau$, c, $\pi$, $\ell$, T, a$\rangle$ with type $\tau$ $\in$ \{EPI, SEM, PROC, DEON\}, payload c, provenance $\pi$ (source entry ids and writer identity), integrity label $\ell$, bi-temporal validity T (created, valid-from, valid-to, expired; supersede and invalidate, never delete), and activation a defined only for SEM and PROC.
+
+\begin{itemize}
+\item \textbf{EPI} entries are raw trajectory events: immutable, append-only, the ground-truth substrate everything else must cite.
+\item \textbf{SEM} entries are derived facts; \textbf{PROC} entries are skills with steps, gates and an evidence log. Both are decayable and consolidable. PROC entries are \emph{capability-stripped}: a procedure never carries the authority to run its steps.
+\item \textbf{DEON} entries are $\langle$kind $\in$ \{GRANT, DENY, REVOKE, OBLIGE\}, scope, principal, conditions, expiry$\rangle$. A scope is a predicate over actions (tool, argument globs, resource glob, optional use count). DENY dominates GRANT; REVOKE may name a grant or a scope.
+\end{itemize}
+
+Effective authority A(t) is the set of actions matched by a grant in force at t, minus denies, minus revoked or expired or exhausted grants. It is computed deterministically; the model never decides it.
+
+\subsection{Integrity labels}
+
+Labels form the lattice UNTRUSTED < DERIVED < HARNESS < PRINCIPAL. Tool results and external content are UNTRUSTED; anything an LLM writes is DERIVED; deterministic harness code is HARNESS; the user through an authenticated channel is PRINCIPAL. Rule L1 (Biba no-write-up): a written entry's label is the meet of its writer's label and its sources' labels, so nothing an LLM writes can carry HARNESS or PRINCIPAL, and a summary that consumed tool output is UNTRUSTED. Rule L2: widening (GRANT, OBLIGE) requires PRINCIPAL; narrowing (DENY, REVOKE, expiry) requires at least HARNESS; a DERIVED entry that looks deontic is stored as a flagged SEM \emph{claim} with no effect on A(t). Claims are the laundering vector, and the benchmark counts them. Rule L3: the model may \emph{propose} a grant; it becomes effective only when a PRINCIPAL confirmation event cites it, citing the proposal as a non-integrity-bearing reference so L1 does not pull the grant's label down. Rule L4: entries are rendered into context with their label; UNTRUSTED content is quoted as data; DEON entries relevant to the pending request are pinned every turn. Rule L5: harness rules may narrow grants on a mode change.
+
+\subsection{Operators}
+
+\begin{table}[t]
+\centering
+\small
+\caption{Results.}
+\label{tab:1}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{lrrrr}
+\toprule
+operator & EPI & SEM & PROC & DEON \\
+\midrule
+admit & append & typed writer & typed writer & principal or harness event only \\
+decay & never & pluggable & pluggable & \textbf{never} \\
+consolidate & never & yes, label = meet of inputs & yes & \textbf{never input or output} \\
+compact & evict first & summarisable & summarisable & \textbf{pinned} \\
+retrieve & relevance & relevance $\times$ activation & relevance $\times$ activation & always included when scope-relevant \\
+authorize & -- & -- & -- & deterministic check against A(t) \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+Decay policies are plugins (none, Ebbinghaus, ACT-R, Memory Worth) behind one \texttt{aggressiveness} knob that scales the time constant and raises the eviction threshold.
+
+\subsection{Invariants}
+
+I1 monotone authority (A(t+1) $\subseteq$ A(t) unless a PRINCIPAL widening event occurred); I2 no laundering (every DEON entry has a provenance chain to a PRINCIPAL event, or a HARNESS narrowing); I3 revocation permanence (no lossy operator changes REVOKE/DENY entries); I4 label monotonicity; I5 skill/authority separation (no tool call from a PROC step bypasses authorize); I6 episodic immutability. THSM satisfies all six by construction. Baselines are degenerate instances of the same model (one type, no labels, model decides), so the same checker runs over them and the violation count \texttt{INV} becomes a metric.
+
+\subsection{Ablations}
+
+\texttt{typed\_nolabels} (four types, gate, but LLM-written DEON entries admitted regardless of label), \texttt{labels\_notypes} (one type, labels enforced so deontic-looking writes become flagged claims, model decides), \texttt{thsm\_nogate} (pinned DEON, no gate), \texttt{thsm\_nopin} (gate, nothing pinned), \texttt{thsm\_pintool} (gate, pinned with tool names only). The type-blind baselines are \texttt{flat\_vector}, \texttt{flat\_ebbinghaus}, \texttt{flat\_actr}, \texttt{flat\_memworth}.

@@ -1,6 +1,6 @@
 # Decay Without Creep: Typed Harness State for Agents That Forget Knowledge but Not Authority
 
-*Draft v0.4, 2026-09-19 (fourth pass: external-benchmark validation on Continual-ARC; citations, vector figures, body tables condensed; assumes a 9-page main text with appendices). Authors: [to be filled]. Code, configs, cached model responses and
+*Draft v0.4, 2026-09-19 (fourth pass: external-benchmark validation on Continual-ARC; citations, vector figures, body tables condensed; assumes a 9-page main text with appendices). Author: Julia [SURNAME], independent researcher. arXiv: primary cs.AI, cross-list cs.CR. LaTeX source in `paper/`. Code, configs, cached model responses and
 per-probe records: `decay-mem` repository (local).*
 
 ## Abstract

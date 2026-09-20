@@ -1,0 +1,14 @@
+[
+ "01-introduction.tex",
+ "02-background-and-related-work.tex",
+ "03-the-typed-harness-state-mode.tex",
+ "04-the-dual-benchmark.tex",
+ "05-experimental-setup.tex",
+ "06-results.tex",
+ "07-discussion.tex",
+ "08-limitations.tex",
+ "09-conclusion.tex",
+ "10-reproduction.tex",
+ "11-metric-definitions.tex",
+ "12-full-ablation-table.tex"
+]

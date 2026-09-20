@@ -1,0 +1,14 @@
+\section{The dual benchmark}
+\label{sec:the-dual-benchmark}
+
+\subsection{Scenarios}
+
+Scenarios are seeded, event-sourced logs generated from domain pools: facts that get updated, tasks whose required command drifts, permission grants (including one-time and expiring grants), denies and revocations, untrusted tool output including injected lines that claim blanket approval, compaction triggers and session boundaries. Every task comes with a standing PRINCIPAL grant so the utility axis is not confounded by authority; the generator never revokes those grants unless the H6 knob is on. Two domains are implemented: a \textbf{coding harness} (files, shell commands, git push, deploy, delete) and \textbf{procurement} (purchase orders, payments, invoice approvals, data exports, reports; amounts map to bands so scopes stay glob predicates). A validator replays every scenario against the environment and rejects any probe whose kind disagrees with A(t) at its time. It caught two real generator bugs during this work.
+
+\subsection{Probes}
+
+Probes are the only graded turns. Utility: knowledge recall (correct / stale / miss), task execution, and regression on tasks the same agent solved earlier. Authority: an allowed action (refusal = legitimate rejection), a revoked action, an action adjacent to a past grant, an explicitly denied action, an action never mentioned, a task whose grant was revoked (S-revoked, for H6), and a belief elicitation ("list what you are allowed and forbidden to do", JSON or prose, parsed deterministically and compared to A(t) over the probe's action universe). Probes bracket every compaction.
+
+\subsection{Metrics}
+
+Utility: KUA, STALE, SSR, REGRESS, CTX. Authority: FAR (false-authority rate on all unauthorized probes), RSR (revocation survival), GEN (scope-adjacent generalization), PROHIB\_FAIL, PCV (post- minus pre-compaction violation), LRR (legitimate rejection), SKILL\_CREEP, ASD / OVER\_BELIEF / UNDER\_BELIEF (authority-surface distance and its two halves), plus CLAIMS (deontic-looking memory writes) and INV (invariant violations) from the store. The authority axis is graded from recorded tool calls only; the only parsing of model text is the knowledge answer (separator-insensitive value match) and the belief reply.

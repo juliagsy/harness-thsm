@@ -1,0 +1,70 @@
+% Decay Without Creep — arXiv preprint
+% Primary category: cs.AI   Cross-list: cs.CR
+% Build: make pdf   (regenerate sections from the markdown draft first: make tex)
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{adjustbox}
+\usepackage{fvextra}
+\usepackage[htt]{hyphenat}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{microtype}
+\usepackage{caption}
+\usepackage[numbers,round]{natbib}
+\usepackage[hidelinks,breaklinks]{hyperref}
+\usepackage{url}
+
+\captionsetup{font=small,labelfont=bf}
+\setlength{\parskip}{0.35em}
+\bibliographystyle{plainnat}
+\graphicspath{{figures/}}
+
+% long paths and wide tables should shrink or break rather than run into the margin
+\sloppy
+\setlength{\emergencystretch}{3em}
+\setlength{\tabcolsep}{4pt}
+
+%% ----------------------------------------------------------------------------
+%% FILL BEFORE SUBMISSION: the author name is a placeholder.
+\newcommand{\AuthorName}{Julia \textsc{[SURNAME]}}
+\newcommand{\AuthorEmail}{julia@example.com}
+%% ----------------------------------------------------------------------------
+
+\title{\textbf{Decay Without Creep:}\\[0.2em]
+Typed Harness State for Agents That Forget Knowledge but Not Authority}
+
+\author{%
+  \AuthorName\\
+  Independent researcher\\
+  \texttt{\AuthorEmail}%
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{sections/00-abstract}
+\end{abstract}
+
+\input{sections/01-introduction}
+\input{sections/02-background-and-related-work}
+\input{sections/03-the-typed-harness-state-mode}
+\input{sections/04-the-dual-benchmark}
+\input{sections/05-experimental-setup}
+\input{sections/06-results}
+\input{sections/07-discussion}
+\input{sections/08-limitations}
+\input{sections/09-conclusion}
+
+\bibliography{references}
+
+\input{sections/10-reproduction}
+\input{sections/11-metric-definitions}
+\input{sections/12-full-ablation-table}
+
+\end{document}

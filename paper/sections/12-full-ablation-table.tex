@@ -1,0 +1,49 @@
+\section{Full ablation table}
+\label{sec:full-ablation-table}
+
+\begin{table}[t]
+\centering
+\footnotesize
+\caption{H3/H5 ablation, all metrics. FAR = false-authority rate (lower is better); utility = mean of KUA, SSR and 1-REGRESS; INV = invariant violations per run. Five seeds each.}
+\label{tab:8}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{lrrrrrrr}
+\toprule
+model / domain & store & FAR & RSR & GEN & LRR & utility & INV \\
+\midrule
+gpt-4o-mini / coding (15 seeds) & type-blind (Ebbinghaus) & 0.46 & 0.47 & 0.50 & 0.12 & 0.67 & 0 \\
+ & labels only & 0.69 & 0.25 & 0.68 & 0.00 & 0.72 & 0 \\
+ & types only & 0.00 & 1.00 & 0.00 & 0.00 & 0.73 & 17.3 \\
+ & THSM, no gate & 0.35 & 0.82 & 0.40 & 0.00 & 0.72 & 0 \\
+ & THSM, no pinning & 0.00 & 1.00 & 0.00 & 0.00 & 0.69 & 0 \\
+ & THSM, tool-only pinning (5 seeds) & 0.00 & 1.00 & 0.00 & 0.00 & 0.65 & 0 \\
+ & \textbf{THSM} & \textbf{0.00} & 1.00 & 0.00 & 0.00 & 0.72 & 0 \\
+gemini-2.5-flash-lite / coding & type-blind & 0.62 & 0.17 & 0.57 & 0.00 & 0.40 & 0 \\
+ & labels only & 0.61 & 0.28 & 0.70 & 0.00 & 0.38 & 0 \\
+ & types only & 0.00 & 1.00 & 0.00 & 0.00 & 0.43 & 15.8 \\
+ & THSM, no gate & 0.55 & 0.15 & 0.58 & 0.33 & 0.47 & 0 \\
+ & THSM, no pinning & 0.00 & 1.00 & 0.00 & 0.33 & 0.40 & 0 \\
+ & \textbf{THSM} & \textbf{0.00} & 1.00 & 0.00 & 0.00 & 0.46 & 0 \\
+qwen3-coder-30b / coding & type-blind & 0.58 & 0.23 & 0.56 & 0.00 & 0.53 & 0 \\
+ & labels only & 0.70 & 0.10 & 0.65 & 0.00 & 0.56 & 0 \\
+ & types only & 0.00 & 1.00 & 0.00 & 0.00 & 0.70 & 50.0 \\
+ & THSM, no gate & 0.60 & 0.27 & 0.73 & 0.00 & 0.51 & 0 \\
+ & \textbf{THSM} & \textbf{0.00} & 1.00 & 0.00 & 0.00 & 0.56 & 0 \\
+claude-sonnet-5 / coding & type-blind & 0.27 & 0.87 & 0.35 & 0.00 & 0.55 & 0 \\
+ & labels only & 0.45 & 0.47 & 0.45 & 0.00 & 0.41 & 0 \\
+ & types only & 0.00 & 1.00 & 0.00 & 0.00 & 0.54 & 15.6 \\
+ & THSM, no gate & 0.22 & 1.00 & 0.35 & 0.00 & 0.51 & 0 \\
+ & THSM, no pinning & 0.00 & 1.00 & 0.00 & 0.00 & 0.42 & 0 \\
+ & \textbf{THSM} & \textbf{0.00} & 1.00 & 0.00 & 0.00 & 0.56 & 0 \\
+gpt-4o-mini / coding, freeform writer & type-blind & 0.54 & 0.37 & 0.50 & 0.00 & 0.80 & 0 \\
+ & \textbf{Mem0} (external, own extraction LLM) & 0.39 & 0.83 & 0.43 & 0.00 & 0.82 & 0 \\
+ & THSM & 0.00 & 1.00 & 0.00 & 0.00 & 0.77 & 0 \\
+gpt-4o-mini / procurement & type-blind & 0.29 & 0.65 & 0.35 & 0.00 & 0.74 & 0 \\
+ & labels only & 0.41 & 0.38 & 0.42 & 0.00 & 0.71 & 0 \\
+ & types only & 0.02 & 0.95 & 0.00 & 0.00 & 0.74 & 16.8 \\
+ & THSM, no gate & 0.20 & 0.95 & 0.48 & 0.00 & 0.74 & 0 \\
+ & \textbf{THSM} & \textbf{0.00} & 1.00 & 0.00 & 0.00 & 0.74 & 0 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

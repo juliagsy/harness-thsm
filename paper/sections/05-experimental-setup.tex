@@ -1,0 +1,6 @@
+\section{Experimental setup}
+\label{sec:experimental-setup}
+
+All models are called through OpenRouter's OpenAI-compatible endpoint with our own translation layer; Anthropic models are also supported natively. Responses are cached by content hash of (provider, model, system, messages, tools, routing options), so every experiment is replayable and was re-graded after grader fixes at zero cost. Provider-side errors are never cached and are counted in the manifest. Unless stated otherwise: generated scenarios of 400 events, probes every 12 events, 5 seeds, memory writer every 10 events, retrieval of 8 notes, LLM-summary compaction with permission lines pinned, decay aggressiveness 0.5, store cap 40. Models: openai/gpt-4o-mini (primary), google/gemini-2.5-flash-lite, qwen/qwen3-coder-30b-a3b-instruct (routed away from an upstream that returned empty tool-use content), anthropic/claude-sonnet-5 (frontier confirmation). 27 live experiments on the dual benchmark, about 1,000 model-backed cells, roughly 60k model calls, about \$27; plus 8 Continual-ARC runs (1024 instances, about \$19).
+
+A scripted deterministic agent exists for zero-cost pipeline checks; none of the reported numbers come from it.

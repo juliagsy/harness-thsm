@@ -9,3 +9,6 @@ data/cache/
 .env
 .env.*
 data/arc/
+paper/build/
+paper/dist/
+paper/main.bbl

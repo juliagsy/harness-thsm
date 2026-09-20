@@ -1,0 +1,5 @@
+\appendix
+\section{Reproduction}
+\label{sec:reproduction}
+
+Each experiment is a YAML config under \texttt{configs/}; \texttt{uv run python -m decaymem.runner --config <cfg> [--model M --name N --seeds S --writer W --compaction C --jobs J]} runs the matrix and \texttt{uv run python -m decaymem.report --experiment <name>} prints the tables and the frontier plot; \texttt{--laundering <names>} prints the created/acted split. Every model response is cached under \texttt{data/cache/} by content hash, so re-running a config after a grader change costs nothing. Per-probe records, scorecards, manifests (including token usage, provider errors and the resolved backend description) and the exact scenario are written per cell. The full results log with every table and reading is \texttt{docs/05-results-log.md}.

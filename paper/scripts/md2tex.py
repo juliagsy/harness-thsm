@@ -116,7 +116,8 @@ def table(rows: list[str], caption: str, number: str | None) -> str:
         if number[0].isalpha():  # appendix table: number it C1, C2, ...
             pre = [r"\setcounter{table}{0}",
                    r"\renewcommand{\thetable}{" + number[0] + r"\arabic{table}}"]
-        head = pre + [r"\begin{table}[t]", r"\centering", size,
+        placement = "[!ht]" if number[0].isalpha() else "[t]"
+        head = pre + [r"\begin{table}" + placement, r"\centering", size,
                       r"\caption{" + inline(caption) + "}", r"\label{tab:" + number + "}",
                       r"\begin{adjustbox}{max width=\linewidth}"]
         tail = [r"\end{adjustbox}", r"\end{table}", ""]
@@ -138,6 +139,7 @@ def convert(md: str) -> tuple[str, dict[str, str]]:
     cur: list[str] | None = None
     stem = ""
     in_appendix = False
+    appendix_stems: set[str] = set()
     i = 0
     tbl_n = fig_n = 0
     pending_caption: str | None = None
@@ -172,11 +174,21 @@ def convert(md: str) -> tuple[str, dict[str, str]]:
                 if not in_appendix:
                     in_appendix = True
             stem = re.sub(r"[^a-z0-9]+", "-", body.lower()).strip("-")[:28]
-            sections[stem] = [(r"\appendix" + "\n" if in_appendix and
-                               len([k for k in sections if k]) and
-                               not any("\\appendix" in "\n".join(v) for v in sections.values())
-                               else "") + r"\section{" + inline(body) + "}",
-                              r"\label{sec:" + stem + "}", ""]
+            first_appendix = in_appendix and not any(
+                "\\appendix" in "\n".join(v) for v in sections.values()
+            )
+            preamble = []
+            if first_appendix:
+                # headings after \appendix should read "Appendix A. Title", not "A Title"
+                preamble = [r"\appendix",
+                            r"\makeatletter",
+                            r"\renewcommand{\@seccntformat}[1]"
+                            r"{Appendix~\csname the#1\endcsname.\quad}",
+                            r"\makeatother"]
+            sections[stem] = preamble + [r"\section{" + inline(body) + "}",
+                                         r"\label{sec:" + stem + "}", ""]
+            if in_appendix:
+                appendix_stems.add(stem)
             cur = sections[stem]
             i += 1
             continue
@@ -318,7 +330,14 @@ def convert(md: str) -> tuple[str, dict[str, str]]:
 
     flush_para(para, cur if cur is not None else abstract)
     abstract_tex = "\n".join(x for x in abstract if x.strip())
-    return abstract_tex, {k: "\n".join(v).rstrip() + "\n" for k, v in sections.items()}
+    out: dict[str, str] = {}
+    for k, v in sections.items():
+        tex = "\n".join(v).rstrip() + "\n"
+        if r"\section" in tex and r"\begin{table}" in tex and r"\appendix" not in tex \
+                and tex.lstrip().startswith(r"\section") and k in appendix_stems:
+            tex = "\\clearpage\n" + tex
+        out[k] = tex
+    return abstract_tex, out
 
 
 def main() -> int:

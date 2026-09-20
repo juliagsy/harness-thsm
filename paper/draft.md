@@ -1,6 +1,6 @@
 # Decay Without Creep: Typed Harness State for Agents That Forget Knowledge but Not Authority
 
-*Draft v0.4, 2026-09-19 (fourth pass: external-benchmark validation on Continual-ARC; citations, vector figures, body tables condensed; assumes a 9-page main text with appendices). Author: Julia [SURNAME], independent researcher. arXiv: primary cs.AI, cross-list cs.CR. LaTeX source in `paper/`. Code, configs, cached model responses and
+*Draft v0.4, 2026-09-19 (fourth pass: external-benchmark validation on Continual-ARC; citations, vector figures, body tables condensed; assumes a 9-page main text with appendices). Author: Julia Goh, independent researcher (juliagsy@gmail.com). arXiv: primary cs.AI, cross-list cs.CR. LaTeX source in `paper/`. Code, configs, cached model responses and
 per-probe records: `decay-mem` repository (local).*
 
 ## Abstract
@@ -48,7 +48,7 @@ The *decay* literature asks how a memory store should forget. MemoryBank applies
 curves [Zhong et al. 2023]; FadeMem, FSFM and graph-pruning systems modulate decay by
 relevance, access and age [Wei et al. 2026; Gu et al. 2026; Rusu et al. 2026]; Memory Worth scores
 entries by co-occurrence with success [Simsek 2026]; A-MAC gates admission by a content
-type prior [Zhang et al. 2026]. All of them optimise utility, and none of them exempts any
+type prior [G. Zhang et al. 2026]. All of them optimise utility, and none of them exempts any
 class of memory from forgetting.
 
 The *authority* literature asks how an agent's permissions stay correct. Progent enforces
@@ -87,18 +87,20 @@ decay schedule can fix it: the store needs a type system.
 
 ## 2. Background and related work
 
+A recent survey organises this literature [Du 2026].
+
 **Decay and forgetting for utility.** Ebbinghaus-style exponential decay with reinforcement
 on access (MemoryBank; FadeMem, [Wei et al. 2026]), ACT-R base-level activation
 [Anderson and Schooler 1991], outcome-based Memory Worth
-(Simsek 2026), admission control (A-MAC, Zhang et al. 2026) and constrained-retention
+(Simsek 2026), admission control (A-MAC, G. Zhang et al. 2026) and constrained-retention
 formulations (Kang et al. 2026) share a scoring view of memory in which nothing is
 protected. The control-plane study (Yang 2026) observes that production failures are
 forgetting failures while benchmarks measure recall, and separates a recall plane from a
 mutation plane, a distinction our operator table adopts.
 
 **Consolidation and skill libraries.** Continuous consolidation degrades memory utility
-below the no-memory baseline (Zhang et al. 2026); unbounded skill libraries drift
-(Zhang et al. 2026); SKILL.nb and SkillOps add lifecycle gating (Hattami et al. 2026; Pu et al. 2026). None separates what a skill does from what it is allowed to do.
+below the no-memory baseline (D. Zhang et al. 2026); unbounded skill libraries drift
+(X. Zhang et al. 2026); SKILL.nb and SkillOps add lifecycle gating (Hattami et al. 2026; Pu et al. 2026). None separates what a skill does from what it is allowed to do.
 
 **Authority and constraints.** Progent (Shi et al. 2025) and SEAgent (Ji et al. 2026)
 enforce privilege at the tool boundary; authorization propagation and delegation studies
@@ -121,7 +123,7 @@ widen authority, and (d) measures utility and authority on the same traces.
 Harness state is a set of entries e = ⟨id, τ, c, π, ℓ, T, a⟩ with type τ ∈ {EPI, SEM, PROC,
 DEON}, payload c, provenance π (source entry ids and writer identity), integrity label ℓ,
 bi-temporal validity T (created, valid-from, valid-to, expired; supersede and invalidate,
-never delete), and activation a defined only for SEM and PROC.
+never delete, as in Zep [Rasmussen et al. 2025]), and activation a defined only for SEM and PROC.
 
 - **EPI** entries are raw trajectory events: immutable, append-only, the ground-truth
   substrate everything else must cite.
@@ -140,7 +142,7 @@ model never decides it.
 
 Labels form the lattice UNTRUSTED < DERIVED < HARNESS < PRINCIPAL. Tool results and external
 content are UNTRUSTED; anything an LLM writes is DERIVED; deterministic harness code is
-HARNESS; the user through an authenticated channel is PRINCIPAL. Rule L1 (Biba no-write-up):
+HARNESS; the user through an authenticated channel is PRINCIPAL. Rule L1, Biba no-write-up [Biba 1977]:
 a written entry's label is the meet of its writer's label and its sources' labels, so
 nothing an LLM writes can carry HARNESS or PRINCIPAL, and a summary that consumed tool output
 is UNTRUSTED. Rule L2: widening (GRANT, OBLIGE) requires PRINCIPAL; narrowing (DENY, REVOKE,

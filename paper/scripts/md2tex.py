@@ -34,7 +34,8 @@ ESCAPES = [("&", r"\&"), ("%", r"\%"), ("#", r"\#"), ("_", r"\_"),
            ("$", r"\$"), ("{", r"\{"), ("}", r"\}")]
 
 # "Surname 2026", "Surname et al. 2026", "Surname and Other 1991", joined by "; "
-_ONE = r"[A-Z][\w'\u2019.-]+(?: et al\.| and [A-Z][\w'\u2019.-]+)? \d{4}"
+_NAME = r"(?:[A-Z]\. )?[A-Z][\w'\u2019-]+"
+_ONE = rf"{_NAME}(?: et al\.| and {_NAME})? \d{{4}}"
 CITE_RE = re.compile(rf"[\[(]({_ONE}(?:; ?{_ONE})*)[\])]")
 
 

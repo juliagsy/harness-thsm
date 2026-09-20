@@ -30,6 +30,6 @@ arxiv: tex figures
 	tectonic --keep-intermediates --keep-logs --outdir build main.tex
 	python3 scripts/check.py
 	cp build/main.bbl .
-	tar czf dist/arxiv-submission.tar.gz main.tex main.bbl sections figures
+	tar czf dist/arxiv-submission.tar.gz main.tex main.bbl sections figures/*.pdf
 	rm -f main.bbl
 	@echo "dist/arxiv-submission.tar.gz ready — primary cs.AI, cross-list cs.CR"

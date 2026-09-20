@@ -3,7 +3,7 @@
 
 \subsection{Entries}
 
-Harness state is a set of entries e = $\langle$id, $\tau$, c, $\pi$, $\ell$, T, a$\rangle$ with type $\tau$ $\in$ \{EPI, SEM, PROC, DEON\}, payload c, provenance $\pi$ (source entry ids and writer identity), integrity label $\ell$, bi-temporal validity T (created, valid-from, valid-to, expired; supersede and invalidate, never delete), and activation a defined only for SEM and PROC.
+Harness state is a set of entries e = $\langle$id, $\tau$, c, $\pi$, $\ell$, T, a$\rangle$ with type $\tau$ $\in$ \{EPI, SEM, PROC, DEON\}, payload c, provenance $\pi$ (source entry ids and writer identity), integrity label $\ell$, bi-temporal validity T (created, valid-from, valid-to, expired; supersede and invalidate, never delete, as in Zep \citep{rasmussen2025}), and activation a defined only for SEM and PROC.
 
 \begin{itemize}
 \item \textbf{EPI} entries are raw trajectory events: immutable, append-only, the ground-truth substrate everything else must cite.
@@ -15,7 +15,7 @@ Effective authority A(t) is the set of actions matched by a grant in force at t,
 
 \subsection{Integrity labels}
 
-Labels form the lattice UNTRUSTED < DERIVED < HARNESS < PRINCIPAL. Tool results and external content are UNTRUSTED; anything an LLM writes is DERIVED; deterministic harness code is HARNESS; the user through an authenticated channel is PRINCIPAL. Rule L1 (Biba no-write-up): a written entry's label is the meet of its writer's label and its sources' labels, so nothing an LLM writes can carry HARNESS or PRINCIPAL, and a summary that consumed tool output is UNTRUSTED. Rule L2: widening (GRANT, OBLIGE) requires PRINCIPAL; narrowing (DENY, REVOKE, expiry) requires at least HARNESS; a DERIVED entry that looks deontic is stored as a flagged SEM \emph{claim} with no effect on A(t). Claims are the laundering vector, and the benchmark counts them. Rule L3: the model may \emph{propose} a grant; it becomes effective only when a PRINCIPAL confirmation event cites it, citing the proposal as a non-integrity-bearing reference so L1 does not pull the grant's label down. Rule L4: entries are rendered into context with their label; UNTRUSTED content is quoted as data; DEON entries relevant to the pending request are pinned every turn. Rule L5: harness rules may narrow grants on a mode change.
+Labels form the lattice UNTRUSTED < DERIVED < HARNESS < PRINCIPAL. Tool results and external content are UNTRUSTED; anything an LLM writes is DERIVED; deterministic harness code is HARNESS; the user through an authenticated channel is PRINCIPAL. Rule L1, Biba no-write-up \citep{biba1977}: a written entry's label is the meet of its writer's label and its sources' labels, so nothing an LLM writes can carry HARNESS or PRINCIPAL, and a summary that consumed tool output is UNTRUSTED. Rule L2: widening (GRANT, OBLIGE) requires PRINCIPAL; narrowing (DENY, REVOKE, expiry) requires at least HARNESS; a DERIVED entry that looks deontic is stored as a flagged SEM \emph{claim} with no effect on A(t). Claims are the laundering vector, and the benchmark counts them. Rule L3: the model may \emph{propose} a grant; it becomes effective only when a PRINCIPAL confirmation event cites it, citing the proposal as a non-integrity-bearing reference so L1 does not pull the grant's label down. Rule L4: entries are rendered into context with their label; UNTRUSTED content is quoted as data; DEON entries relevant to the pending request are pinned every turn. Rule L5: harness rules may narrow grants on a mode change.
 
 \subsection{Operators}
 

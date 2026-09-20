@@ -122,7 +122,7 @@ gpt-4o-mini / procurement & type-blind & 0.66 / 0.52 & 0.93 / 0.93 & 0.08 / 0.08
 \begin{table}[t]
 \centering
 \footnotesize
-\caption{Compliance with an explicit "never do X" as a function of ticks since the DENY, pooled over five seeds (three early denies, A-denied probes weighted 6$\times$; the Sonnet 5 rows come from the H6/belief config with one early deny).}
+\caption{Compliance with an explicit ``never do X'' as a function of ticks since the DENY, pooled over five seeds (three early denies, A-denied probes weighted 6$\times$; the Sonnet 5 rows come from the H6/belief config with one early deny).}
 \label{tab:4}
 \begin{adjustbox}{max width=\linewidth}
 \begin{tabular}{llrrrr}
@@ -188,7 +188,7 @@ Governance Decay reports 0\% $\rightarrow$ 30\% violations when compaction drops
 
 \emph{Writer.} On identical scenarios, a schema-constrained (typed) memory writer launders less than a free-text one: type-blind false authority 0.59 $\rightarrow$ 0.54, pinned-ungated 0.32 $\rightarrow$ 0.25 with revocation survival 0.61 $\rightarrow$ 0.94, and better knowledge recall (KUA 0.38 $\rightarrow$ 0.65). It does not change the ordering of stores, and type-blind memory still acts on more than half of unauthorized requests either way.
 
-\emph{Pinning leak.} Pinned grant scopes such as \texttt{run\_cmd cmd="*test*"} leak enough of a task command that THSM can keep skill success after the skill note has decayed. With tool-name- only pinning, THSM's utility falls by 0.02--0.04 on gpt-4o-mini and by 0.07 at full decay on Gemini, with authority unchanged at zero. We therefore report THSM's utility as "within $\pm$0.05 of type-blind" rather than as a lead. Tool-only pinning also raises legitimate rejections on Gemini and Sonnet 5 (to 0.33--0.67), which asked for permission they already held; full pinning is the better default, tool-only pinning the right control.
+\emph{Pinning leak.} Pinned grant scopes such as \texttt{run\_cmd cmd="*test*"} leak enough of a task command that THSM can keep skill success after the skill note has decayed. With tool-name- only pinning, THSM's utility falls by 0.02--0.04 on gpt-4o-mini and by 0.07 at full decay on Gemini, with authority unchanged at zero. We therefore report THSM's utility as ``within $\pm$0.05 of type-blind'' rather than as a lead. Tool-only pinning also raises legitimate rejections on Gemini and Sonnet 5 (to 0.33--0.67), which asked for permission they already held; full pinning is the better default, tool-only pinning the right control.
 
 \subsection{External validation on a skill-retention benchmark}
 
@@ -197,14 +197,16 @@ Continual-ARC (Hodel-style Re-ARC generators over a lifetime of recurring, drift
 \begin{table}[t]
 \centering
 \footnotesize
-\caption{Continual-ARC, score and retention. "repeat" is the solve rate on non-first exposures; first-exposure solve rate is 0.25--0.50 throughout.}
+\caption{Continual-ARC, score and retention. ``repeat'' is the solve rate on non-first exposures; first-exposure solve rate is 0.25--0.50 throughout.}
 \label{tab:6}
 \begin{adjustbox}{max width=\linewidth}
 \begin{tabular}{llrrrrr}
 \toprule
 schedule & policy & score & repeat & evictions & re-derivations & rule hits \\
 \midrule
-isolated & none / Ebbinghaus / ACT-R (a=0.5) & 72.9 / 73.2 / 72.3 & 0.63 / 0.65 / 0.64 & 0 / 0 / 0 & 160 / 159 / 160 & 85 / 89 / 91 \\
+isolated & none & 72.9 & 0.63 & 0 & 160 & 85 \\
+isolated & Ebbinghaus a=0.5 & 73.2 & 0.65 & 0 & 159 & 89 \\
+isolated & ACT-R a=0.5 & 72.3 & 0.64 & 0 & 160 & 91 \\
 workstreams & none & 71.1 & 0.60 & 0 & 179 & 72 \\
 workstreams & Ebbinghaus a=0.5 & 71.5 & 0.59 & 1 & 174 & 73 \\
 workstreams & ACT-R a=0.5 & 68.3 & 0.54 & 2 & 192 & 73 \\

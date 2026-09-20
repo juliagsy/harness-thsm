@@ -9,7 +9,12 @@ figures:
 	cd .. && uv run python -c "from decaymem.report.paperfigs import make_all; make_all(out='paper/figures')"
 
 pdf:
-	mkdir -p build && tectonic --keep-logs --outdir build main.tex
+	mkdir -p build && tectonic --keep-intermediates --keep-logs --outdir build main.tex
+
+## a copy with a readable filename, for circulating a draft
+review: pdf
+	cp build/main.pdf decay-without-creep-draft.pdf
+	@echo "paper/decay-without-creep-draft.pdf"
 
 all: tex figures pdf
 

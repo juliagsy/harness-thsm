@@ -51,3 +51,5 @@ Zero-cost configs: `smoke_dryrun`, `gen_dryrun`, `h1_dryrun`, `h3_dryrun`. Live 
 | [docs/02-dual-benchmark.md](docs/02-dual-benchmark.md) | Scenario generator, probes, metrics, grading |
 | [docs/03-plugin-architecture.md](docs/03-plugin-architecture.md) | Interfaces, module layout, configs, run flow, reproducibility |
 | [docs/04-roadmap.md](docs/04-roadmap.md) | Phases, milestones, risks, open decisions, cost model |
+| [docs/05-results-log.md](docs/05-results-log.md) | Every live experiment, its tables and its reading |
+| [paper/](paper/) | Preprint: `draft.md` is the text, LaTeX is generated from it (`make pdf`) |

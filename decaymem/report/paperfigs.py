@@ -271,7 +271,7 @@ def fig_depth(
 
 
 def make_all(
-    root: str | Path = "experiments", out: str | Path = "docs/paper/figures"
+    root: str | Path = "experiments", out: str | Path = "paper/figures"
 ) -> list[Path]:
     root, out = Path(root), Path(out)
     paths: list[Path] = []

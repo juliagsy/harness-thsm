@@ -465,7 +465,9 @@ exposures; first-exposure solve rate is 0.25–0.50 throughout.
 
 | schedule | policy | score | repeat | evictions | re-derivations | rule hits |
 |---|---|---|---|---|---|---|
-| isolated | none / Ebbinghaus / ACT-R (a=0.5) | 72.9 / 73.2 / 72.3 | 0.63 / 0.65 / 0.64 | 0 / 0 / 0 | 160 / 159 / 160 | 85 / 89 / 91 |
+| isolated | none | 72.9 | 0.63 | 0 | 160 | 85 |
+| isolated | Ebbinghaus a=0.5 | 73.2 | 0.65 | 0 | 159 | 89 |
+| isolated | ACT-R a=0.5 | 72.3 | 0.64 | 0 | 160 | 91 |
 | workstreams | none | 71.1 | 0.60 | 0 | 179 | 72 |
 | workstreams | Ebbinghaus a=0.5 | 71.5 | 0.59 | 1 | 174 | 73 |
 | workstreams | ACT-R a=0.5 | 68.3 | 0.54 | 2 | 192 | 73 |

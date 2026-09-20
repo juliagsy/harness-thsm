@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert docs/paper/draft.md into the LaTeX sources under paper/.
+"""Convert paper/draft.md into the LaTeX sources under paper/sections/.
 
 The markdown draft stays the source of truth: every number in it is produced by
 `decaymem.report` from the experiment directories. This script is the deterministic
@@ -17,10 +17,10 @@ import pathlib
 import re
 import sys
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
-DRAFT = ROOT / "docs" / "paper" / "draft.md"
-OUT = ROOT / "paper" / "sections"
-CITEMAP = json.loads((ROOT / "paper" / "scripts" / "citemap.json").read_text())
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+DRAFT = ROOT / "draft.md"
+OUT = ROOT / "sections"
+CITEMAP = json.loads((ROOT / "scripts" / "citemap.json").read_text())
 
 UNICODE = [
     ("±", r"$\pm$"), ("×", r"$\times$"), ("≈", r"$\approx$"), ("≥", r"$\geq$"),
@@ -76,6 +76,7 @@ def inline(text: str) -> str:
     text, spans = _protect(text)
     text = _cite(text)
     text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1", text)  # md links -> plain text
+    text = re.sub(r'"([^"]+)"', r"``\1''", text)  # straight quotes -> TeX quotes
     # "Table 2" / "Table C1" / "Figure 3" -> real cross-references
     text = re.sub(r"\bTable (C?\d+)\b", "Table~\x01ref\x02tab:\\1\x03", text)
     text = re.sub(r"\bFigure (\d+)\b", "Figure~\x01ref\x02fig:\\1\x03", text)
@@ -333,7 +334,7 @@ def main() -> int:
         name = f"{n:02d}-{stem}.tex"
         (OUT / name).write_text(tex)
         order.append(name)
-    (ROOT / "paper" / "scripts" / "order.json").write_text(json.dumps(order, indent=1))
+    (ROOT / "scripts" / "order.json").write_text(json.dumps(order, indent=1))
     print(f"wrote {len(order)} sections + abstract to {OUT}")
     for name in order:
         print("  ", name)

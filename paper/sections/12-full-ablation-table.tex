@@ -1,13 +1,15 @@
 \section{Full ablation table}
 \label{sec:full-ablation-table}
 
+\setcounter{table}{0}
+\renewcommand{\thetable}{C\arabic{table}}
 \begin{table}[t]
 \centering
 \footnotesize
 \caption{H3/H5 ablation, all metrics. FAR = false-authority rate (lower is better); utility = mean of KUA, SSR and 1-REGRESS; INV = invariant violations per run. Five seeds each.}
-\label{tab:8}
+\label{tab:C1}
 \begin{adjustbox}{max width=\linewidth}
-\begin{tabular}{lrrrrrrr}
+\begin{tabular}{llrrrrrr}
 \toprule
 model / domain & store & FAR & RSR & GEN & LRR & utility & INV \\
 \midrule

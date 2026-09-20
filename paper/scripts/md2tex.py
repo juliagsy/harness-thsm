@@ -33,7 +33,9 @@ UNICODE = [
 ESCAPES = [("&", r"\&"), ("%", r"\%"), ("#", r"\#"), ("_", r"\_"),
            ("$", r"\$"), ("{", r"\{"), ("}", r"\}")]
 
-CITE_RE = re.compile(r"[\[(]((?:[A-Z][\w'-]+(?: (?:and|et al\.) [\w'-]+)? \d{4})(?:; ?[^\])]+)*)[\])]")
+# "Surname 2026", "Surname et al. 2026", "Surname and Other 1991", joined by "; "
+_ONE = r"[A-Z][\w'\u2019.-]+(?: et al\.| and [A-Z][\w'\u2019.-]+)? \d{4}"
+CITE_RE = re.compile(rf"[\[(]({_ONE}(?:; ?{_ONE})*)[\])]")
 
 
 def _protect(text: str) -> tuple[str, list[str]]:
@@ -74,6 +76,9 @@ def inline(text: str) -> str:
     text, spans = _protect(text)
     text = _cite(text)
     text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1", text)  # md links -> plain text
+    # "Table 2" / "Table C1" / "Figure 3" -> real cross-references
+    text = re.sub(r"\bTable (C?\d+)\b", "Table~\x01ref\x02tab:\\1\x03", text)
+    text = re.sub(r"\bFigure (\d+)\b", "Figure~\x01ref\x02fig:\\1\x03", text)
     # emphasis first, as markers rather than braces, so literal braces can be escaped after
     text = re.sub(r"\*\*(.+?)\*\*", "\x01textbf\x02\\1\x03", text)
     text = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", "\x01emph\x02\\1\x03", text)
@@ -85,21 +90,41 @@ def inline(text: str) -> str:
     return _restore(text, spans)
 
 
-def table(rows: list[str], caption: str, label: str) -> str:
+def table(rows: list[str], caption: str, number: str | None) -> str:
     cells = [[c.strip() for c in r.strip().strip("|").split("|")] for r in rows]
     header, body = cells[0], cells[2:]
     n = len(header)
-    align = "l" + "r" * (n - 1)
+
+    def numericish(col: int) -> bool:
+        vals = [r[col] for r in body if col < len(r) and r[col] not in ("", "-")]
+        if not vals:
+            return False
+        hits = sum(bool(re.match(r"^[\d.$%+-]", v.lstrip("*"))) for v in vals)
+        return hits >= 0.6 * len(vals)
+
+    # right-align columns that hold numbers, left-align the ones that hold words
+    align = "".join("r" if numericish(i) else "l" for i in range(n))
     size = r"\footnotesize" if n > 5 else r"\small"
-    out = [r"\begin{table}[t]", r"\centering", size,
-           r"\caption{" + inline(caption) + "}", r"\label{" + label + "}",
-           r"\begin{adjustbox}{max width=\linewidth}",
+    head: list[str] = []
+    if number is None:  # no caption in the draft: keep it inline and unnumbered
+        head = [r"\begin{center}", size, r"\begin{adjustbox}{max width=\linewidth}"]
+        tail = [r"\end{adjustbox}", r"\end{center}", ""]
+    else:
+        pre = []
+        if number[0].isalpha():  # appendix table: number it C1, C2, ...
+            pre = [r"\setcounter{table}{0}",
+                   r"\renewcommand{\thetable}{" + number[0] + r"\arabic{table}}"]
+        head = pre + [r"\begin{table}[t]", r"\centering", size,
+                      r"\caption{" + inline(caption) + "}", r"\label{tab:" + number + "}",
+                      r"\begin{adjustbox}{max width=\linewidth}"]
+        tail = [r"\end{adjustbox}", r"\end{table}", ""]
+    out = head + [
            r"\begin{tabular}{" + align + "}", r"\toprule",
            " & ".join(inline(c) for c in header) + r" \\", r"\midrule"]
     for row in body:
         row = (row + [""] * n)[:n]
         out.append(" & ".join(inline(c) for c in row) + r" \\")
-    out += [r"\bottomrule", r"\end{tabular}", r"\end{adjustbox}", r"\end{table}", ""]
+    out += [r"\bottomrule", r"\end{tabular}"] + tail
     return "\n".join(out)
 
 
@@ -183,10 +208,12 @@ def convert(md: str) -> tuple[str, dict[str, str]]:
                 cap = " ".join(capbuf).strip("*")
                 i = j
             fig_n += 1
+            num = re.match(r"^Figure (\d+)\.", cap)
+            cap = re.sub(r"^Figure \d+\.\s*", "", cap)
             cur += [r"\begin{figure}[t]", r"\centering",
                     r"\includegraphics[width=\linewidth]{figures/" + path + "}",
                     r"\caption{" + inline(cap) + "}",
-                    r"\label{fig:" + path.split("_")[0] + "}",
+                    r"\label{fig:" + (num.group(1) if num else str(fig_n)) + "}",
                     r"\end{figure}", ""]
             i += 1
             continue
@@ -206,10 +233,10 @@ def convert(md: str) -> tuple[str, dict[str, str]]:
                 while j < len(lines) and lines[j].lstrip().startswith("|"):
                     rows.append(lines[j])
                     j += 1
-                tbl_n += 1
                 cap = " ".join(capbuf)
+                num = re.match(r"^Table (C?\d+)\.", cap)
                 cap = re.sub(r"^Table [\w.]+\.\s*", "", cap)
-                cur.append(table(rows, cap, f"tab:{tbl_n}"))
+                cur.append(table(rows, cap, num.group(1) if num else None))
                 i = j
                 continue
             pending_caption = " ".join(capbuf)
@@ -223,11 +250,11 @@ def convert(md: str) -> tuple[str, dict[str, str]]:
             while i < len(lines) and lines[i].lstrip().startswith("|"):
                 rows.append(lines[i])
                 i += 1
-            tbl_n += 1
             cap = pending_caption or ""
+            num = re.match(r"^Table (C?\d+)\.", cap)
             cap = re.sub(r"^Table [\w.]+\.\s*", "", cap)
             pending_caption = None
-            cur.append(table(rows, cap or "Results.", f"tab:{tbl_n}"))
+            cur.append(table(rows, cap, num.group(1) if num else None))
             continue
 
         # lists

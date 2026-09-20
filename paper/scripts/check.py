@@ -16,12 +16,9 @@ def main(log_path: str = "build/main.log") -> int:
     log = (root / log_path).read_text(errors="replace")
     problems: list[str] = []
 
-    for kind in ("citation", "reference"):
-        hits = sorted(set(re.findall(rf"(?:LaTeX Warning: )?Citation|Reference `([^']+)'.*undefined",
-                                     log)))
-        hits = [h for h in hits if h]
-        if hits:
-            problems += [f"undefined {kind}: {h}" for h in hits]
+    # LaTeX Warning: Citation `foo' on page 3 undefined   /   Reference `bar' ... undefined
+    for kind, name in re.findall(r"(Citation|Reference) `([^']+)' [^\n]*undefined", log):
+        problems.append(f"undefined {kind.lower()}: {name}")
 
     for pt, lines in re.findall(r"Overfull \\hbox \(([\d.]+)pt too wide\)[^\n]*?lines (\d+--\d+)",
                                 log):

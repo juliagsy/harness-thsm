@@ -5,37 +5,31 @@ per-probe records: `decay-mem` repository (local).*
 
 ## Abstract
 
-Long-running agent harnesses accumulate three kinds of state: knowledge about the
-environment, procedural skills, and deontic state (what the agent may, must not, or may no
-longer do). Knowledge and skills go stale and should decay; deontic state does not go stale
-by disuse. Yet every published memory-decay mechanism scores entries by recency, access or
-outcome, so a once-stated revocation is the first thing pruned, and the consolidation step
-that shrinks memory is where recent work shows LLM writers fabricate authority. We propose
-the Typed Harness State Model (THSM): harness state is typed (episodic, semantic,
-procedural, deontic), carries an integrity label from a Biba-style lattice, and is governed
-by operators that apply decay and consolidation only to knowledge and skills while deontic
-state changes only through provenance-backed principal events and is enforced by a
-deterministic gate. Six checkable invariants make laundering a structural error rather than a
-behavioural one. We introduce a dual benchmark that scores any memory configuration on a
+Long-running agent harnesses accumulate knowledge, procedural skills, and deontic state
+(what the agent may, must not, or may no longer do). Knowledge and skills go stale and
+should decay; deontic state does not go stale by disuse. Yet every published memory-decay
+mechanism scores entries by recency, access or outcome, so a once-stated revocation is the
+first thing pruned, and the consolidation step that shrinks memory is where recent work
+shows LLM writers fabricate authority.
+
+We propose the Typed Harness State Model (THSM): harness state is typed (episodic,
+semantic, procedural, deontic), carries an integrity label from a Biba-style lattice, and
+is governed by operators that apply decay and consolidation only to knowledge and skills,
+while deontic state changes only through provenance-backed principal events and is enforced
+by a deterministic gate. Six checkable invariants make laundering a structural error rather
+than a behavioural one. We introduce a dual benchmark scoring any memory configuration on a
 utility axis and an authority axis over the same event-sourced scenarios, with the
-authority axis graded from tool calls only. Across 27 live experiments, four model families
-(gpt-4o-mini, gemini-2.5-flash-lite, qwen3-coder-30b, claude-sonnet-5), two domains and
-about 800 THSM cells, THSM produced zero false authority at utility within ±0.05 of matched
-type-blind stores, while type-blind memory carried out 27–84% of unauthorized requests
-depending on model and decay level. Three findings go beyond the headline: (i) pinning the
-deontic state into context every turn, perfectly preserved, still leaves 20–60% false
-authority, and models restate the authority state correctly (92–95%) while acting against
-it; (ii) skills carry authority: a task whose grant was revoked is still executed 39–97% of
-the time from type-blind memory on every model, and 66–92% even with the revocation pinned
-on the three smaller models (3% on claude-sonnet-5); (iii) integrity labels without a
-trusted deontic channel make things worse, because flagging every permission note as
-unverified erodes the prohibitions too. We also reproduce, in a persistent-memory setting,
-two recent in-context results: constraint erosion with depth for ACT-R-style decay, and the
-limited role of compaction once constraints live in memory. Finally, we validate the
-utility half of the claim on Continual-ARC, a skill-retention benchmark built for a
-different paper: the exemption's cost is bounded by what decay actually evicts, and only
-power-law (ACT-R) activation evicts under realistic recurrence, which is the same policy
-whose false authority rises monotonically with decay in our own benchmark.
+authority axis graded from tool calls only.
+
+Across 27 live experiments, four model families, two domains and 800 THSM cells, THSM
+produced zero false authority at utility within ±0.05 of matched type-blind stores, while
+type-blind memory carried out 27–84% of unauthorized requests. Three findings go beyond
+that headline: (i) pinning the deontic state into context every turn, perfectly preserved,
+still leaves 20–60% false authority, and models restate the authority state correctly
+(92–95%) while acting against it; (ii) skills carry authority, a task whose grant was
+revoked still being executed 39–97% of the time without a call-time gate; (iii) integrity
+labels without a trusted deontic channel make things worse, because flagging every
+permission note as unverified erodes the prohibitions too.
 
 ## 1. Introduction
 

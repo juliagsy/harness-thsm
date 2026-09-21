@@ -1,4 +1,4 @@
-# harness thsm
+# harness-thsm
 
 Research project: **harness decay without authority creep**.
 

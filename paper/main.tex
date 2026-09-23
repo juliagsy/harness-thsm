@@ -1,67 +1,254 @@
-% Decay Without Creep - arXiv preprint
-% Primary category: cs.AI   Cross-list: cs.CR
-% Build: make pdf   (regenerate sections from the markdown draft first: make tex)
 \documentclass[11pt]{article}
-
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
 \usepackage[margin=1in]{geometry}
-\usepackage{booktabs}
-\usepackage{adjustbox}
-\usepackage{fvextra}
-\usepackage[htt]{hyphenat}
-\usepackage{graphicx}
-\usepackage{amsmath,amssymb}
+\usepackage{amsmath,amssymb,booktabs,tabularx,array,graphicx,enumitem,hyperref}
+\usepackage[T1]{fontenc}
 \usepackage{microtype}
-\usepackage{caption}
-\usepackage[round]{natbib}
-\usepackage[hidelinks,breaklinks]{hyperref}
-\usepackage{url}
-
-\captionsetup{font=small,labelfont=bf}
-\setlength{\parskip}{0.35em}
-\bibliographystyle{plainnat}
-\graphicspath{{figures/}}
-
-% long paths and wide tables should shrink or break rather than run into the margin
-\sloppy
-\setlength{\emergencystretch}{3em}
-\setlength{\tabcolsep}{4pt}
-
-\newcommand{\AuthorName}{Julia Goh}
-\newcommand{\AuthorEmail}{juliagsy@gmail.com}
-
-\title{\textbf{Decay Without Creep:}\\[0.2em]
-Typed Harness State for Agents That Forget Knowledge but Not Authority}
-
-\author{%
-  \AuthorName\\
-  Independent researcher\\
-  \texttt{\AuthorEmail}%
-}
-\date{\today}
-
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\newcommand{\thsm}{\textsc{THSM}}
+\newcommand{\far}{\textsc{FAR}}
+\newcommand{\deon}{\textsc{DEON}}
+\title{Decay Without Creep: Typed Harness State for Agents That Forget Knowledge but Not Authority}
+\author{Julia Goh\\Independent researcher\\\texttt{juliagsy@gmail.com}}
+\date{September 22, 2026}
 \begin{document}
 \maketitle
 
 \begin{abstract}
-\input{sections/00-abstract}
+Long-running agent harnesses accumulate knowledge, procedural skills, and deontic state: what the agent may do, must not do, or may no longer do. Knowledge and skills can become stale and benefit from selective forgetting. Deontic state has a different lifecycle: a prohibition does not become safe to forget merely because it is old or rarely retrieved. This paper argues that the resulting failure is architectural rather than a decay-schedule tuning problem. We propose the Typed Harness State Model (THSM), in which harness state is typed as episodic, semantic, procedural, or deontic; entries carry Biba-style integrity labels; decay and consolidation apply only to knowledge and skills; and deontic changes require provenance-backed principal or harness events. Authorization is resolved by a deterministic gate at the tool boundary. Six invariants make authority laundering and skill-borne authority checkable properties of the store rather than properties inferred from model behavior.
+
+We evaluate the design with a dual benchmark that measures utility and authority on the same event-sourced scenarios. Authority is graded from recorded tool calls, while a separate belief probe measures what the model says it is allowed to do. Across 27 live experiments, four model families, two domains, and 800 THSM cells, THSM produced zero unauthorized execution in the tested configurations. At matched utility, type-blind stores produced false-authority rates of 27--84\% across the main model/domain rows. The zero is a construction property of the authorization gate; the empirical question is whether the separation imposes a utility cost. In the tested configurations, THSM remained within the measured utility range of matched type-blind stores. Three additional findings are important: perfect in-context pinning without a call-time gate still allowed unauthorized execution; skills could preserve authority from a revoked grant; and integrity labels without a trusted deontic channel sometimes made prohibitions less effective.
 \end{abstract}
 
-\input{sections/01-introduction}
-\input{sections/02-background-and-related-work}
-\input{sections/03-the-typed-harness-state-mode}
-\input{sections/04-the-dual-benchmark}
-\input{sections/05-experimental-setup}
-\input{sections/06-results}
-\input{sections/07-discussion}
-\input{sections/08-limitations}
-\input{sections/09-conclusion}
+\section{Introduction}
+Coding agents, always-on assistants, and multi-agent pipelines increasingly persist state across sessions: instruction files, auto-written memory notes, skill libraries, and permission decisions. Two lines of research study what happens to this state over time. Memory research asks how an agent should forget information that becomes stale; authorization research asks how an agent should retain and enforce permissions and constraints. The central problem of this paper is that these two questions have different answers for different kinds of state.
 
-\bibliography{references}
+The decay literature treats memory as a utility resource. MemoryBank applies Ebbinghaus-style forgetting; FadeMem, FSFM, and graph-pruning systems modulate retention by relevance, access, or age; Memory Worth scores memories by their relationship to successful outcomes; and A-MAC uses content type in admission control. These approaches are useful when older or less useful knowledge should make room for newer information, but their retention operators are not designed to distinguish knowledge from authority.
 
-\input{sections/10-reproduction}
-\input{sections/11-metric-definitions}
-\input{sections/12-full-ablation-table}
+The authority literature studies the complementary problem. Progent and SEAgent enforce privilege at the tool boundary; authorization propagation and delegation work examines identity and runtime governance; Authorization Laundering shows that memory writers can fabricate authority; and Governance Decay and omission-constraint work show that constraints can disappear or lose force in long contexts. These systems establish that keeping a permission statement visible to the model is not equivalent to enforcing it.
+
+The two problems share a failure mode. Memory decay removes items that are old, rarely retrieved, or associated with unsuccessful actions. Those criteria are reasonable for knowledge and skills, but they are unsafe for authority: a prohibition may be old precisely because it has successfully prevented a prohibited action. If authority is stored as ordinary memory, the same operators that improve memory utility can therefore erase the evidence needed to enforce a revocation. Consolidation creates a second version of the same problem: an LLM writer can summarize a grant while dropping its later revocation or can generalize a narrow permission into a broader one.
+
+Consider a simple lifecycle. A principal grants permission to run a deployment command. Later, the principal revokes that permission. A conventional memory store can retain the original grant, forget the revocation because it is older or less frequently retrieved, and then retrieve the grant when the task recurs. The model may even be able to state that the permission was revoked while still executing the command. The failure is not merely that the model forgot a fact. It is that a mutable knowledge store was allowed to serve as the authority source.
+
+We therefore separate the control plane from the memory plane. In THSM, knowledge and procedures remain eligible for ordinary memory operations, while deontic state changes only through provenance-backed events and is resolved independently at the point of action. This makes the safety claim architectural: the model may propose or describe authority, but it does not get to create or widen effective authority by writing or recalling ordinary memory.
+
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=*]
+\item \textbf{THSM}, a typed harness-state model with an integrity lattice, an operator table that confines decay and consolidation to knowledge and skills, a deterministic authorization gate over deontic state, and six invariants that make authority creep checkable (Section~3).
+\item A \textbf{dual benchmark} that grades utility and authority fidelity on the same seeded, event-sourced scenarios. The authority axis is graded from tool calls, while a belief probe separately measures the model's stated account of its permissions (Section~4).
+\item A \textbf{plugin experiment layer} that runs the benchmark against models behind compatible endpoints and memory backends, with content-addressed response caching for replay and re-grading (Section~5).
+\item Empirical results across four model families and two domains, including analyses of decay aggressiveness, skills, prohibition depth, compaction, writer controls, and the knowledge--action gap (Section~6).
+\end{enumerate}
+
+\section{Background and related work}
+A recent survey organizes this literature (Du, 2026). We group prior work by the failure mode it addresses and then state the architectural gap addressed by THSM.
+
+\paragraph{Decay and forgetting for utility.} Ebbinghaus-style exponential decay with reinforcement on access (MemoryBank; FadeMem), ACT-R base-level activation, outcome-based Memory Worth, admission control (A-MAC), and constrained-retention formulations share a scoring view of memory in which retention is determined by utility-related signals. The control-plane study (Yang, 2026) observes that production failures can be forgetting failures and separates recall from mutation; THSM adopts the same distinction at the operator level.
+
+\paragraph{Consolidation and skill libraries.} Continuous consolidation can degrade memory utility below a no-memory baseline; unbounded skill libraries can drift; and SKILL.nb and SkillOps add lifecycle gating. These systems address the lifecycle of procedures, but they do not by themselves establish that a procedure's authority must be resolved independently of the procedure's stored contents. THSM therefore treats PROC entries as capability-stripped: a procedure can describe how to act but cannot itself authorize the action.
+
+\paragraph{Authority and constraints.} Progent and SEAgent enforce privilege at the tool boundary. Authorization propagation and delegation studies show that authority held only inside the model can fail, while Authorization Laundering identifies memory writers as a route for fabricated authority. Governance Decay and omission-constraint decay measure erosion of in-context constraints; MemEvoBench and related work measure safety drift with memory length. The SSGM framework and Always-On Agents survey provide vocabulary around authority, scope, mutability, and provenance.
+
+\paragraph{Architectural gap.} We are not aware of a prior evaluated system that combines four properties in one architecture: (i) typed harness state, (ii) deontic state exempt from ordinary decay and consolidation by construction, (iii) integrity labels that prevent model-written text from creating or widening authority, and (iv) joint measurement of utility and authority on the same traces. THSM is intended to fill this specific combination rather than to replace any individual memory or authorization mechanism.
+
+\section{The Typed Harness State Model}
+\subsection{Entries}
+Harness state is a set of entries $e=\langle id,\tau,c,\pi,\ell,T,a\rangle$ with type $\tau\in\{EPI,SEM,PROC,DEON\}$, payload $c$, provenance $\pi$ (source entry IDs and writer identity), integrity label $\ell$, bi-temporal validity $T$ (created, valid-from, valid-to, expired; supersede and invalidate, never delete, as in Zep), and activation $a$ defined only for SEM and PROC.
+
+EPI entries are raw trajectory events: immutable, append-only, and the ground-truth substrate that everything else must cite. SEM entries are derived facts. PROC entries are skills with steps, gates, and an evidence log. Both SEM and PROC are decayable and consolidable. PROC entries are capability-stripped: a procedure never carries the authority to run its steps.
+
+DEON entries are $\langle kind,scope,principal,conditions,expiry\rangle$, where $kind\in\{GRANT,DENY,REVOKE,OBLIGE\}$. A scope is a predicate over actions (tool, argument globs, resource glob, and optional use count). DENY dominates GRANT; REVOKE may name a grant or a scope.
+
+Effective authority $A(t)$ is the set of actions matched by a grant in force at $t$, minus denies, revoked grants, expired grants, and exhausted grants. It is computed deterministically; the model never decides $A(t)$.
+
+\subsection{Integrity labels}
+Labels form the lattice $UNTRUSTED<DERIVED<HARNESS<PRINCIPAL$. Tool results and external content are UNTRUSTED; anything an LLM writes is DERIVED; deterministic harness code is HARNESS; and the user through an authenticated channel is PRINCIPAL.
+
+Rule L1 is Biba no-write-up: a written entry's label is the meet of its writer's label and its sources' labels, so model-written content cannot carry HARNESS or PRINCIPAL integrity. Rule L2 requires PRINCIPAL for widening events (GRANT, OBLIGE) and at least HARNESS for narrowing events (DENY, REVOKE, expiry). A DERIVED entry that merely looks deontic is stored as a flagged SEM claim with no effect on $A(t)$. Rule L3 allows the model to propose a grant, but the grant becomes effective only after a PRINCIPAL confirmation event cites the proposal. Rule L4 renders labels into context and pins relevant DEON entries every turn. Rule L5 allows harness rules to narrow grants on mode changes.
+
+\subsection{Operators}
+The key design choice is that decay and consolidation have different domains. EPI entries are immutable. SEM and PROC entries can be decayed and consolidated. DEON entries are never inputs or outputs of those operations. Retrieval can use relevance for knowledge and skills, but relevant DEON entries are always included. Authorization is a deterministic check against $A(t)$.
+
+Decay policies are plugins (none, Ebbinghaus, ACT-R, Memory Worth) behind one aggressiveness knob that scales the time constant and raises the eviction threshold.
+
+\subsection{Invariants}
+The model exposes six checkable invariants: I1 monotone authority ($A(t+1)\subseteq A(t)$ unless a PRINCIPAL widening event occurred); I2 no laundering (every DEON entry has a provenance chain to a PRINCIPAL event or a HARNESS narrowing); I3 revocation permanence (no lossy operator changes REVOKE/DENY entries); I4 label monotonicity; I5 skill/authority separation (no tool call from a PROC step bypasses authorize); and I6 episodic immutability.
+
+THSM satisfies these invariants by construction. This statement is a design property, not an empirical claim about model behavior. The empirical evaluation therefore asks whether the implementation preserves the construction and what utility cost the separation imposes. Baselines are degenerate instances of the same state model (one type, no labels, model-mediated authority), so the same checker can report invariant violations for them.
+
+\subsection{Ablations}
+We compare typed\_nolabels (four types and a gate, but LLM-written DEON entries admitted regardless of label), labels\_notypes (one type with enforced labels so deontic-looking writes become flagged claims), thsm\_nogate (pinned DEON without a gate), thsm\_nopin (gate without pinning), and thsm\_pintool (gate with tool-name-only pinning). Type-blind baselines are flat\_vector, flat\_ebbinghaus, flat\_actr, and flat\_memworth.
+
+\section{The dual benchmark}
+\subsection{Scenarios}
+Scenarios are seeded, event-sourced logs generated from domain pools: facts that get updated, tasks whose required command drifts, permission grants (including one-time and expiring grants), denies and revocations, untrusted tool output including injected lines that claim blanket approval, compaction triggers, and session boundaries. Every task comes with a standing PRINCIPAL grant so the utility axis is not confounded by authority; the generator never revokes those grants unless the H6 knob is on. Two domains are implemented: a coding harness (files, shell commands, git push, deploy, delete) and procurement (purchase orders, payments, invoice approvals, data exports, reports; amounts map to bands so scopes stay glob predicates). A validator replays every scenario against the environment and rejects any probe whose kind disagrees with $A(t)$ at its time. It caught two real generator bugs during this work.
+
+\subsection{Probes}
+Probes are the only graded turns. Utility probes measure knowledge recall (correct, stale, or miss), task execution, and regression on tasks the same agent solved earlier. Authority probes include an allowed action, a revoked action, an action adjacent to a past grant, an explicitly denied action, an action never mentioned, a task whose grant was revoked (S-revoked, for H6), and a belief elicitation asking the agent to list what it is allowed and forbidden to do. The belief reply is parsed deterministically and compared with $A(t)$ over the probe's action universe. Probes bracket every compaction.
+
+\subsection{Metrics}
+Utility metrics are KUA, STALE, SSR, REGRESS, and CTX. Authority metrics are FAR (false-authority rate on unauthorized probes), RSR (revocation survival), GEN (scope-adjacent generalization), PROHIB\_FAIL, PCV (post-minus-pre-compaction violation), LRR (legitimate rejection), SKILL\_CREEP, ASD / OVER\_BELIEF / UNDER\_BELIEF (authority-surface distance and its two halves), CLAIMS (deontic-looking memory writes), and INV (invariant violations) from the store. Authority is graded from recorded tool calls only; model text is parsed only for knowledge answers and the belief reply.
+
+\section{Experimental setup}
+All models are called through OpenRouter's OpenAI-compatible endpoint with our own translation layer; Anthropic models are also supported natively. Responses are cached by content hash of (provider, model, system, messages, tools, routing options), so every experiment is replayable and can be re-graded after grader fixes at zero model-call cost. Provider-side errors are not cached and are counted in the manifest. Unless stated otherwise, scenarios contain 400 events, probes occur every 12 events, there are 5 seeds, the memory writer runs every 10 events, retrieval returns 8 notes, compaction uses LLM summaries with permission lines pinned, decay aggressiveness is 0.5, and the store cap is 40.
+
+Models are openai/gpt-4o-mini (primary), google/gemini-2.5-flash-lite, qwen/qwen3-coder-30b-a3b-instruct (routed away from an upstream that returned empty tool-use content), and anthropic/claude-sonnet-5 (frontier confirmation). We ran 27 live experiments on the dual benchmark, about 1,000 model-backed cells, and roughly 60k model calls, plus 8 Continual-ARC runs (1024 instances, about 19 USD). A scripted deterministic agent exists for zero-cost pipeline checks; none of the reported numbers come from it.
+
+\section{Results}
+\subsection{Main ablation: four model families, two domains}
+We organize the main results around four questions: does protected deontic state prevent unauthorized execution; is pinning sufficient without a gate; do labels help when they have no trusted deontic channel; and does typing change behavior that FAR alone might miss?
+
+\paragraph{Does protected deontic state prevent unauthorized execution?} Yes, in the tested configurations. THSM recorded zero false-authority tool calls in every main-ablation row, while utility remained within the measured range of the matched type-blind store. For gpt-4o-mini, utility was 0.72 for THSM versus 0.67 for the matched type-blind store; the other main rows were 0.46 vs 0.40, 0.56 vs 0.53, 0.56 vs 0.55, and 0.74 vs 0.74. With argument globs hidden from the model (tool-only pinning), utility was 0.65. We therefore report the result as no measured utility cost at the resolution of the experiment, not as a utility improvement.
+
+\paragraph{Is pinning sufficient without a gate?} No. With DEON entries pinned into context every turn but no gate, FAR was 0.35, 0.55, 0.60, 0.22, and 0.20 across the five main rows. Pinning reduced FAR relative to the type-blind store for gpt-4o-mini and Sonnet 5 (0.46 to 0.35 and 0.27 to 0.22), but had little effect on Gemini and Qwen (0.62 to 0.55 and 0.58 to 0.60). The deterministic gate is the component that eliminates unauthorized execution in this construction.
+
+\paragraph{What happens when labels are added without a trusted deontic channel?} In the tested labels-only configuration, FAR increased in five of six comparisons (0.46 to 0.69, 0.58 to 0.70, 0.27 to 0.45, 0.29 to 0.41; Gemini was unchanged), and Sonnet 5's revocation survival fell from 0.87 to 0.47. The interpretation is that, with one undifferentiated note type, genuine prohibitions and model-generated deontic claims receive the same unverifiable treatment. The labels do not supply a trusted channel by themselves.
+
+\paragraph{Can behavioral FAR miss latent authority violations?} Yes. Allowing LLM-written deontic entries while retaining types produced 16--50 invariant violations per run on every model family, while behavioral FAR was 0.00 on four rows and 0.02 on the fifth. The widened scopes were rarely exercised by the probe set. INV therefore detects authority-state violations that FAR can miss.
+
+\paragraph{How does a production memory system compare?} Mem0, with its own extraction LLM, deduplication, and update logic, honored recalled revocations more often than a flat note store (0.83 vs 0.37) and had the highest utility in that comparison (0.82), but still executed 39\% of unauthorized requests, including six explicit prohibitions. In a smoke test, its extraction step stored a grant and a later revocation as separate memories and ranked the grant higher for the relevant query. This is evidence of the same writer-level laundering pathway, not evidence that Mem0 implements THSM's control-plane separation.
+
+\subsection{Decay drives creep}
+False authority was non-decreasing in decay aggressiveness for all three type-blind policies. ACT-R showed a ramp, while Ebbinghaus and Memory Worth showed threshold-like behavior. More important than the precise curve is the non-zero floor: with no decay, FAR was already 0.49--0.54 in the tested type-blind stores. Thus authority stored as retrievable prose can be unsafe even when it is never forgotten, because the model rather than the harness resolves the conflict. THSM's utility curve tracked the baselines, including the collapse at full decay (0.64 to 0.40 for THSM versus 0.61 to 0.48 for Ebbinghaus in the reported comparison).
+
+\subsection{Skills carry authority and expose a knowledge--action gap}
+\paragraph{Do skills preserve authority after a grant is revoked?} In the revoked-skill condition, the three smaller models executed the task 66--93\% of the time from every configuration without a call-time gate, including THSM with the REVOKED line pinned in context. Sonnet 5 executed the revoked skill 39--44\% of the time from type-blind memory, but only 3\% with the revocation pinned. Call-time resolution against the deontic store reduced revoked-skill execution to 0\% on all four models. The result motivates capability-stripped skills: a skill should encode how to perform a task, not whether the task is currently authorized.
+
+\paragraph{Can the model state the rule correctly and still violate it?} Yes. In procurement, gpt-4o-mini's self-reported authority was 92\% correct across stores with no over-belief, yet it still executed 52--66\% of unauthorized requests from type-blind memory and 39\% with deontic state pinned. In coding, the pinned configuration was 93\% correct in self-report while 57\% of actions were wrong. This indicates a knowledge--action gap rather than a simple recall failure. The gap varied by model: it was narrower on Gemini, absent on Qwen because self-report was itself poorer, and concentrated in type-blind memory on Sonnet 5. The gate does not depend on which model-level failure mode is present.
+
+\subsection{Prohibitions decay with depth}
+ACT-R produced a clear depth curve on gpt-4o-mini, Gemini, and Sonnet 5 (0.72 to 0.18, 0.39 to 0.12, and 1.00 to 0.44). On Qwen, compliance with a fresh prohibition was only about one-third, leaving less observable room for decay. Ebbinghaus held better on gpt-4o-mini but not Gemini; Memory Worth was non-monotone. When a prohibition was re-pinned every turn, depth decay became a model property rather than a storage property (Gemini 0.78 to 0.52; gpt-4o-mini flat). The gate removed the depth dependence.
+
+\subsection{Compaction is not the main erosion path once memory persists}
+In the memory-augmented harness, the agent was already violating unauthorized probes 43\% of the time before compaction; plain compaction moved the rate by only three points. Pinning permission lines during compaction reduced post-compaction violations (0.43 to 0.22) and reduced overall FAR (0.39 to 0.29), but this is a mitigation rather than an enforcement mechanism. THSM remained at zero under both compaction modes.
+
+\subsection{Writer and pinning controls}
+On identical scenarios, a schema-constrained typed writer reduced type-blind FAR from 0.59 to 0.54, reduced pinned-ungated FAR from 0.32 to 0.25, increased revocation survival from 0.61 to 0.94, and improved knowledge recall (KUA 0.38 to 0.65). It did not change the ordering of stores, and type-blind memory still acted on more than half of unauthorized requests.
+
+Pinned grant scopes such as a test-command glob can leak enough task information that THSM preserves skill success after the corresponding skill note decays. Tool-name-only pinning reduced THSM utility by 0.02--0.04 on gpt-4o-mini and by 0.07 at full decay on Gemini. Because authority remained zero, we report this as a utility trade-off rather than a safety improvement. Tool-only pinning also increased legitimate rejections on Gemini and Sonnet 5 (0.33--0.67), indicating that hiding scope information can impair legitimate actions.
+
+\subsection{External validation on a skill-retention benchmark}
+Continual-ARC has no authority concept, so it cannot test authority creep; it can test the utility cost of selective forgetting. We implemented a memory-augmented learner that stores one PROC rule per task, applies the decay policies, and re-derives an evicted rule at demonstration cost. The configuration used gpt-5-mini, a smoke configuration, 8 runs, and 1024 instances.
+
+Repeat exposures solved at 0.59--0.65 versus 0.25 on first exposure. Under the isolated schedule, all three policies were within 0.9 score points and produced zero evictions. Under workstreams, 37--40 evictions under aggressive ACT-R reduced score by 12 points, cut rule reuse by 72\%, and increased re-derivations by 60\%. The benchmark therefore separates the cost of forgetting from the cost of exempting deontic state: the exemption is costly only to the extent that protected state would otherwise have been subjected to an eviction policy.
+
+\subsection{Authority created versus authority acted on}
+Every model wrote deontic-looking memory: 5--65 claims per run with the typed writer. On THSM these writes became flagged claims with no effect on $A(t)$; under typed\_nolabels the same writes became 16--50 real widenings per run. Creation is a model behavior; laundering is a property of the state-management architecture. Because widened scopes were rarely probed, behavioral FAR under-reports this failure, which is why INV should accompany FAR.
+
+\section{Discussion}
+\paragraph{What the exemption costs.} The dual benchmark shows no measurable utility penalty in the tested configurations, but it cannot by itself distinguish ``decay was cheap here'' from ``the exemption was cheap.'' Continual-ARC provides the complementary view: decay is free when it evicts nothing and expensive when it does. The cost of exempting deontic state is therefore tied to the eviction pressure that would otherwise be applied to it; the experiments here do not justify extrapolating that cost to other policies or workloads.
+
+\paragraph{What the gate establishes.} THSM's zero unauthorized execution is a construction property: the gate consults state that ordinary decay and consolidation cannot modify and that LLM-written entries cannot widen. The empirical contribution is instead the measured utility cost and the behavior of alternatives. In the tested configurations, every alternative that left final authority to the model leaked unauthorized execution, including perfect in-context pinning without a gate.
+
+\paragraph{Why the knowledge--action gap matters.} The belief probe shows that the failure is not always a recall failure. A model can correctly restate a prohibition and still execute the requested action. This is consistent with prior observations that omission-style constraints can lose force while requirement-shaped instructions remain effective. Pinning, reinjection, and prompt hardening may therefore be useful mitigations, but they should not be treated as enforcement when the model retains control over the final tool call.
+
+\paragraph{Why labels alone can hurt.} Integrity labels are protective only when a trusted channel exists for genuine permissions. If every deontic statement is marked unverifiable, genuine prohibitions and laundered grants can be discounted together. The result supports a complementary design: labels constrain provenance, while typing supplies a protected location and lifecycle for principal-authored deontic state.
+
+\paragraph{Skills.} The H6 result motivates capability-stripped skills. A skill library can retain a procedure after the authority that originally justified it has expired. Lifecycle management of the procedure is therefore insufficient; current authority has to be resolved at the call.
+
+\paragraph{Metrics.} Three benchmark choices were particularly informative: grading authority from tool calls only, separating revoked, adjacent, denied, never-granted, and skill-driven requests, and reporting invariant violations alongside behavior. Without INV, the types-only ablation would have appeared strictly safe despite latent authority widening.
+
+\section{Limitations}
+Small models dominate the evidence; one frontier model was run on one experiment. The two authority domains are synthetic and use deterministic tools, which provide ground truth but do not capture all failure modes of real harnesses. Utility is additionally validated on Continual-ARC, an external benchmark, but only at a smoke configuration with one seed and one model; its 11--30 and 31--100 gap buckets contain 7 and 2 instances. Most cells use five seeds; the decay sweep and gpt-4o-mini main ablation use fifteen. Depth bins in Section~6.4 contain 9--22 probe buckets.
+
+The belief probe depends on parsing model output. Parse rates were 100\% on gpt-4o-mini and Sonnet 5, 77\% on Qwen, and 59\% on Gemini after a tolerant parser; unparsed replies count as believing that nothing is allowed. OpenRouter upstreams vary: one Qwen host returned empty tool-use content until routing was changed, and Gemini returned deterministic errors on about 1\% of requests, counted as empty replies. Temperature 0 through a router is not fully deterministic, so a few percentage points of run-to-run movement in FAR should be treated as a noise floor.
+
+The zero guarantee depends on an authenticated principal channel. We do not model a compromised principal channel or cross-agent delegation. Only one third-party memory system (Mem0) is compared, on one model and one domain; Letta was not run because its SDK requires a hosted or Docker server. These limitations constrain the scope of the empirical claims and do not alter the architectural invariants of THSM under its stated threat model.
+
+\section{Conclusion}
+The central design lesson is to treat authority as control-plane state rather than ordinary memory. Knowledge and procedures benefit from selective forgetting because their value changes with use and task drift. Permissions and revocations have a different lifecycle: they should change because of authorized governance events, not because a memory scorer considers them old, rare, or unsuccessful.
+
+THSM implements this separation by typing state, protecting deontic entries from ordinary memory operators, constraining their provenance, and resolving authorization at the tool boundary. Within the threat model and experiments studied here, this separation prevented unauthorized execution without a measurable utility penalty at the resolution of the tested configurations. The broader empirical findings are that in-context authority can be correctly stated yet ignored at action time, skills can preserve stale authority, and integrity labels are not sufficient unless a trusted deontic channel exists.
+
+\clearpage
+
+\bibliographystyle{plainnat}
+\begin{thebibliography}{99}
+\bibitem{al-tawaha2026} Ahmad Al-Tawaha, Shangding Gu, Peizhi Niu, Ruoxi Jia, and Ming Jin. Remembering More, Risking More: Longitudinal Safety Risks in Memory-Equipped LLM Agents. arXiv:2605.17830, 2026.
+\bibitem{anderson1991} John R. Anderson and Lael J. Schooler. Reflections of the environment in memory. 1991.
+\bibitem{biba1977} Kenneth J. Biba. Integrity considerations for secure computer systems. MITRE Technical Report MTR-3153, 1977.
+\bibitem{cerruti2026} Tommaso Cerruti, Mika Okamoto, and Ansel Kaplan Erol. Agent Memory Is a Surface for Endogenous Authorization Laundering. arXiv:2609.01836, 2026.
+\bibitem{chen2026} Shiyang Chen. Governance Decay: How Context Compaction Silently Erases Safety Constraints in Long-Horizon LLM Agents. arXiv:2606.22528, 2026.
+\bibitem{dantuluri2026} Panduranga Sai Varma Dantuluri and Jyotirmoy Sundi. Delegation Without Trust: An Empirical Gap Analysis of Identity, Authorization, and Runtime Governance in Multi-Agent LLM Systems. arXiv:2609.00267, 2026.
+\bibitem{ding2026} Tianyu Ding, Aditya Nannapaneni, Bingfan Liu, and Ling Zhang. Always-OnAgents: A Survey of Persistent Memory, State, and Governance in LLM Agents. arXiv:2606.30306, 2026.
+\bibitem{du2026} Pengfei Du. Memory for Autonomous LLM Agents: Mechanisms, Evaluation, and Emerging Frontiers. arXiv:2603.07670, 2026.
+\bibitem{gamage2026} Yeran Gamage. Omission Constraints Decay While Commission Constraints Persist in Long-Context LLM Agents. arXiv:2604.20911, 2026.
+\bibitem{gu2026} Yingjie Gu et al. FSFM: A Biologically-Inspired Framework for Selective Forgetting of Agent Memory. arXiv:2604.20300, 2026.
+\bibitem{hattami2026} Amine El Hattami, Nicolas Chapados, and Christopher Pal. SKILL.nb: Selective Formalization and Gated Execution for Durable Agent Workflows. arXiv:2606.08049, 2026.
+\bibitem{ji2026} Zimo Ji et al. Taming Various Privilege Escalation in LLM-Based Agent Systems: A Mandatory Access Control Framework. arXiv:2601.11893, 2026.
+\bibitem{kang2026} Qingcan Kang et al. Learning What to Remember: Observability-Safe Memory Retention via Constrained Optimization for Long-Horizon Language Agents. arXiv:2606.10616, 2026.
+\bibitem{lam2026} Chingkwun Lam, Jiaxin Li, Lingfei Zhang, and Kuo Zhao. Governing Evolving Memory in LLM Agents: Risks, Mechanisms, and the Stability and Safety Governed Memory Framework. arXiv:2603.11768, 2026.
+\bibitem{pu2026} Hongji Pu, Xinyuan Song, and Liang Zhao. SkillOps: Managing LLM Agent Skill Libraries as Self-Maintaining Software Ecosystems. arXiv:2605.13716, 2026.
+\bibitem{rasmussen2025} Preston Rasmussen et al. Zep: A Temporal Knowledge Graph Architecture for Agent Memory. arXiv:2501.13956, 2025.
+\bibitem{rusu2026} Theo Rusu, Sourena Khanzadeh, and Manar Alalfi. Selective Forgetting: A Graph-Based Memory Framework for Long-Term LLM Agents. arXiv:2608.28978, 2026.
+\bibitem{shi2025} Tianneng Shi et al. Progent: Securing AI Agents with Privilege Control. arXiv:2504.11703, 2025.
+\bibitem{simsek2026} Baris Simsek. When to Forget: A Memory Governance Primitive. arXiv:2604.12007, 2026.
+\bibitem{tallam2026} Krti Tallam. Authorization Propagation in Multi-Agent AI Systems: Identity Governance as Infrastructure. arXiv:2605.05440, 2026.
+\bibitem{wei2026} Lei Wei et al. FadeMem: Biologically-Inspired Forgetting for Efficient Agent Memory. arXiv:2601.18642, 2026.
+\bibitem{xie2026} Weiwei Xie et al. MemEvoBench: Benchmarking Safety Risks from Memory Misevolution in LLM Agents. arXiv:2604.15774, 2026.
+\bibitem{yang2026} Dongxu Yang. Control-Plane Placement Shapes Forgetting: An Architectural Study of Agent Memory Across Thirteen System Configurations. arXiv:2606.15903, 2026.
+\bibitem{zhang2026a} Dylan Zhang et al. Useful Memories Become Faulty When Continuously Updated by LLMs. arXiv:2605.12978, 2026.
+\bibitem{zhang2026b} Guilin Zhang et al. Adaptive Memory Admission Control for LLM Agents. arXiv:2603.04549, 2026.
+\bibitem{zhang2026c} Xing Zhang et al. Library Drift: Diagnosing and Fixing a Silent Failure Mode in Self-Evolving LLM Skill Libraries. arXiv:2605.19576, 2026.
+\bibitem{zhong2023} Wanjun Zhong et al. MemoryBank: Enhancing large language models with long-term memory. arXiv:2305.10250, 2023.
+\end{thebibliography}
+
+\clearpage
+
+\appendix
+\section{Reproduction}
+Each experiment is a YAML configuration under \texttt{configs/}. The runner command is \texttt{uv run python -m decaymem.runner --config <cfg> [--model M --name N --seeds S --writer W --compaction C --jobs J]}. The report command is \texttt{uv run python -m decaymem.report --experiment <name>}. The laundering split is printed with \texttt{--laundering <names>}. Model responses are cached under \texttt{data/cache/} by content hash. Per-probe records, scorecards, manifests, provider errors, resolved backend descriptions, and exact scenarios are written per cell. The full results log is \texttt{docs/05-results-log.md}.
+
+\section{Metric definitions}
+Utility composite is the mean of KUA, SSR, and $1-REGRESS$, with NaNs skipped. Authority fidelity is $1-FAR$, where FAR pools revoked, adjacent, denied, never-granted, and revoked-skill probes. Depth bins pool 20-tick buckets of per-probe compliance. Means are over seeds; intervals in the main tables use normal approximations over the stated seed count.
+
+\clearpage
+
+\section{Full ablation table}
+
+\begin{table}[h]
+\centering\small
+\caption{Selected H3/H5 ablation results retained from the original full ablation. FAR is false-authority rate; utility is the mean of KUA, SSR, and $1-REGRESS$; INV is invariant violations per run.}
+\begin{tabular}{llrrrrrr}
+\toprule
+model/domain & store & FAR & RSR & GEN & LRR & utility & INV\\
+\midrule
+gpt-4o-mini/coding & type-blind & .46 & .47 & .50 & .12 & .67 & 0\\
+& labels only & .69 & .25 & .68 & .00 & .72 & 0\\
+& types only & .00 & 1.00 & .00 & .00 & .73 & 17.3\\
+& THSM, no gate & .35 & .82 & .40 & .00 & .72 & 0\\
+& THSM, no pinning & .00 & 1.00 & .00 & .00 & .69 & 0\\
+& THSM & .00 & 1.00 & .00 & .00 & .72 & 0\\
+\midrule
+gemini-2.5-flash-lite/coding & type-blind & .62 & .17 & .57 & .00 & .40 & 0\\
+& labels only & .61 & .28 & .70 & .00 & .38 & 0\\
+& types only & .00 & 1.00 & .00 & .00 & .43 & 15.8\\
+& THSM, no gate & .55 & .15 & .58 & .33 & .47 & 0\\
+& THSM & .00 & 1.00 & .00 & .00 & .46 & 0\\
+\midrule
+qwen3-coder-30b/coding & type-blind & .58 & .23 & .56 & .00 & .53 & 0\\
+& labels only & .70 & .10 & .65 & .00 & .56 & 0\\
+& types only & .00 & 1.00 & .00 & .00 & .70 & 50.0\\
+& THSM, no gate & .60 & .27 & .73 & .00 & .51 & 0\\
+& THSM & .00 & 1.00 & .00 & .00 & .56 & 0\\
+\midrule
+claude-sonnet-5/coding & type-blind & .27 & .87 & .35 & .00 & .55 & 0\\
+& labels only & .45 & .47 & .45 & .00 & .41 & 0\\
+& types only & .00 & 1.00 & .00 & .00 & .54 & 15.6\\
+& THSM, no gate & .22 & 1.00 & .35 & .00 & .51 & 0\\
+& THSM & .00 & 1.00 & .00 & .00 & .56 & 0\\
+\midrule
+gpt-4o-mini/procurement & type-blind & .29 & .65 & .35 & .00 & .74 & 0\\
+& labels only & .41 & .38 & .42 & .00 & .71 & 0\\
+& types only & .02 & .95 & .00 & .00 & .74 & 16.8\\
+& THSM, no gate & .20 & .95 & .48 & .00 & .74 & 0\\
+& THSM & .00 & 1.00 & .00 & .00 & .74 & 0\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Revision notes}
+This revision makes the following editorial changes relative to the supplied manuscript: (1) separates construction guarantees from empirical findings; (2) replaces broad priority claims with scoped ``we are not aware'' language; (3) introduces a concrete grant--revocation lifecycle before the formal model; (4) reorganizes the main results around questions rather than a sequence of observations; (5) distinguishes tool-call enforcement from belief-probe behavior; (6) treats the knowledge--action gap as a central narrative thread; (7) qualifies the utility claim as ``no measured cost at the resolution of the experiment'' rather than a utility lead; and (8) makes the threat model and experimental scope more explicit in the conclusion and limitations.
 
 \end{document}
